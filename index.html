@@ -9,46 +9,55 @@
 <body>
   <header class="app-header">
     <div>
-      <p class="eyebrow">United States OTC registry search</p>
+      <p class="eyebrow">CPP country medicine registry search</p>
       <h1>OpenFDA</h1>
     </div>
     <div class="header-meta">
       <span id="apiDate">openFDA NDC</span>
-      <span>HUMAN OTC DRUG</span>
+      <span id="sourceBadge">HUMAN OTC DRUG</span>
     </div>
   </header>
 
   <main class="app-shell">
-    <section class="search-panel" aria-label="OTC search controls">
+    <section class="search-panel" aria-label="Medicine search controls">
+      <div class="source-tabs" role="tablist" aria-label="Data source">
+        <button class="source-tab active" type="button" data-source="us" aria-selected="true">US OTC</button>
+        <button class="source-tab" type="button" data-source="eu" aria-selected="false">EU Centralized</button>
+      </div>
+
+      <div id="sourceNote" class="source-note">
+        United States OTC products from openFDA NDC Directory.
+      </div>
+
       <form id="searchForm" class="search-form">
         <div class="search-input-wrap">
-          <label for="keyword">검색어</label>
+          <label for="keyword">Search</label>
           <input
             id="keyword"
             type="search"
             autocomplete="off"
-            placeholder="예: advil, aspirin, acetaminophen, 0573-0147"
+            placeholder="Example: advil, aspirin, acetaminophen, 0573-0147"
           />
         </div>
-        <button id="searchButton" type="submit">검색</button>
+        <button id="searchButton" type="submit">Search</button>
       </form>
 
       <div class="control-grid">
         <div class="control-group">
-          <label for="searchMode">검색 범위</label>
+          <label for="searchMode">Search field</label>
           <select id="searchMode">
-            <option value="smart">자동</option>
-            <option value="brand">브랜드</option>
-            <option value="ingredient">성분</option>
-            <option value="ndc">NDC</option>
-            <option value="labeler">회사</option>
+            <option value="smart">Smart</option>
+            <option value="brand">Brand / product</option>
+            <option value="ingredient">Ingredient</option>
+            <option value="ndc">NDC / EMA No.</option>
+            <option value="labeler">Company</option>
           </select>
         </div>
 
-        <div class="control-group">
+        <div id="categoryControl" class="control-group">
           <label for="categoryFilter">Marketing category</label>
           <select id="categoryFilter">
-            <option value="">전체</option>
+            <option value="">All</option>
             <option value="OTC MONOGRAPH DRUG">OTC MONOGRAPH DRUG</option>
             <option value="NDA">NDA</option>
             <option value="ANDA">ANDA</option>
@@ -58,7 +67,7 @@
         </div>
 
         <div class="control-group">
-          <label for="resultLimit">표시 수</label>
+          <label for="resultLimit">Limit</label>
           <select id="resultLimit">
             <option value="20">20</option>
             <option value="50">50</option>
@@ -67,25 +76,25 @@
         </div>
 
         <div class="control-group">
-          <label for="sortMode">정렬</label>
+          <label for="sortMode">Sort</label>
           <select id="sortMode">
-            <option value="relevance">관련도</option>
-            <option value="brand">브랜드명</option>
-            <option value="labeler">회사명</option>
-            <option value="expiration">등재 만료일</option>
+            <option value="relevance">Relevance</option>
+            <option value="brand">Product name</option>
+            <option value="labeler">Company</option>
+            <option value="expiration">Date</option>
           </select>
         </div>
 
         <label class="switch-row">
           <input id="strictMode" type="checkbox" checked />
-          <span>낮은 관련도 숨김</span>
+          <span>Hide weak matches</span>
         </label>
       </div>
     </section>
 
     <section class="status-bar" aria-live="polite">
-      <div id="statusTitle">검색어를 입력하세요.</div>
-      <div id="statusDetail">FDA NDC Directory에서 현재 등록된 OTC 제품을 조회합니다.</div>
+      <div id="statusTitle">Enter a search term.</div>
+      <div id="statusDetail">Choose US OTC or EU Centralized, then search by product, ingredient, code, or company.</div>
     </section>
 
     <section id="errorBox" class="error-box" hidden></section>
@@ -97,9 +106,9 @@
           <span>results</span>
         </div>
         <div class="pager">
-          <button id="prevPage" type="button" disabled>이전</button>
+          <button id="prevPage" type="button" disabled>Previous</button>
           <span id="pageLabel">1</span>
-          <button id="nextPage" type="button" disabled>다음</button>
+          <button id="nextPage" type="button" disabled>Next</button>
         </div>
       </div>
 
@@ -108,17 +117,17 @@
           <thead>
             <tr>
               <th class="score-col">Score</th>
-              <th>Product</th>
+              <th id="productHeader">Product</th>
               <th>Ingredient</th>
               <th>Company</th>
-              <th>Form</th>
-              <th>NDC</th>
-              <th class="action-col">Label</th>
+              <th id="formHeader">Form</th>
+              <th id="codeHeader">NDC</th>
+              <th id="detailHeader" class="action-col">Detail</th>
             </tr>
           </thead>
           <tbody id="resultsBody">
             <tr>
-              <td colspan="7" class="empty-state">검색 결과가 여기에 표시됩니다.</td>
+              <td colspan="7" class="empty-state">Search results will appear here.</td>
             </tr>
           </tbody>
         </table>
@@ -139,7 +148,7 @@
             <div data-field="regulatory"></div>
           </section>
           <section>
-            <h3>Drug Label</h3>
+            <h3>Label</h3>
             <div data-field="label"></div>
           </section>
         </div>

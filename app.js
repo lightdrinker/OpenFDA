@@ -1,8 +1,37 @@
 const API_BASE = "https://api.fda.gov";
 const NDC_ENDPOINT = `${API_BASE}/drug/ndc.json`;
 const LABEL_ENDPOINT = `${API_BASE}/drug/label.json`;
+const EU_ENDPOINT = "/api/eu-search";
+
+const SOURCES = {
+  us: {
+    label: "US OTC",
+    apiLabel: "openFDA NDC",
+    badge: "HUMAN OTC DRUG",
+    note: "United States OTC products from openFDA NDC Directory.",
+    placeholder: "Example: advil, aspirin, acetaminophen, 0573-0147",
+    empty: "No matching US OTC products.",
+    codeHeader: "NDC",
+    formHeader: "Form",
+    dateSortLabel: "Listing expiration",
+    detailButton: "Detail"
+  },
+  eu: {
+    label: "EU Centralized",
+    apiLabel: "EMA medicines JSON",
+    badge: "Centralised procedure",
+    note: "EU centralized medicines from EMA. EMA data does not directly mark OTC status, so use this as an authorization signal.",
+    placeholder: "Example: paracetamol, ibuprofen, emedastine, EMEA/H/C/000223",
+    empty: "No matching EU centralized medicines.",
+    codeHeader: "EMA No.",
+    formHeader: "Group",
+    dateSortLabel: "Last updated",
+    detailButton: "EMA"
+  }
+};
 
 const state = {
+  source: "us",
   query: "",
   page: 1,
   total: 0,
@@ -15,7 +44,11 @@ const state = {
 const els = {
   form: document.getElementById("searchForm"),
   keyword: document.getElementById("keyword"),
+  sourceTabs: document.querySelectorAll("[data-source]"),
+  sourceNote: document.getElementById("sourceNote"),
+  sourceBadge: document.getElementById("sourceBadge"),
   searchMode: document.getElementById("searchMode"),
+  categoryControl: document.getElementById("categoryControl"),
   categoryFilter: document.getElementById("categoryFilter"),
   resultLimit: document.getElementById("resultLimit"),
   sortMode: document.getElementById("sortMode"),
@@ -29,6 +62,8 @@ const els = {
   pageLabel: document.getElementById("pageLabel"),
   errorBox: document.getElementById("errorBox"),
   apiDate: document.getElementById("apiDate"),
+  codeHeader: document.getElementById("codeHeader"),
+  formHeader: document.getElementById("formHeader"),
   detailTemplate: document.getElementById("detailTemplate")
 };
 
@@ -55,8 +90,10 @@ function compactUnique(values) {
 
 function normalize(value) {
   return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[^a-z0-9가-힣-]+/g, " ")
+    .replace(/[^a-z0-9\uac00-\ud7a3-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -81,18 +118,25 @@ function wildcardTerm(value) {
 }
 
 function formatDate(value) {
-  const text = String(value || "");
-  if (!/^\d{8}$/.test(text)) return value || "N/A";
-  return `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`;
+  const text = String(value || "").trim();
+  if (!text) return "N/A";
+  if (/^\d{8}$/.test(text)) return `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(text)) {
+    const [day, month, year] = text.split("/");
+    return `${year}-${month}-${day}`;
+  }
+  return text;
+}
+
+function dateValue(value) {
+  const formatted = formatDate(value);
+  const time = Date.parse(formatted);
+  return Number.isNaN(time) ? 0 : time;
 }
 
 function joinValues(values, fallback = "N/A") {
   const list = compactUnique(values);
   return list.length ? list.join(", ") : fallback;
-}
-
-function getTextList(item, field) {
-  return compactUnique([item[field], item.openfda?.[field]]);
 }
 
 function getActiveIngredients(item) {
@@ -119,7 +163,7 @@ function makeFieldClause(field, phrase, wild) {
   return clauses;
 }
 
-function makeSearchExpression(query, broad = false) {
+function makeUsSearchExpression(query, broad = false) {
   const mode = els.searchMode.value;
   const raw = query.trim();
   const phrase = openFdaPhrase(raw);
@@ -129,10 +173,7 @@ function makeSearchExpression(query, broad = false) {
   let fields;
 
   if (mode === "ndc" || isNdc) {
-    fields = [
-      `product_ndc:${phrase}`,
-      `packaging.package_ndc:${phrase}`
-    ];
+    fields = [`product_ndc:${phrase}`, `packaging.package_ndc:${phrase}`];
   } else if (mode === "brand") {
     fields = makeFieldClause("brand_name", phrase, wild);
   } else if (mode === "ingredient") {
@@ -158,20 +199,29 @@ function makeSearchExpression(query, broad = false) {
   return `${base.join(" AND ")} AND (${fields.join(" OR ")})`;
 }
 
-function buildSearchUrl(query, page, broad = false) {
+function buildUsSearchUrl(query, page, broad = false) {
   const limit = Number(els.resultLimit.value);
   const skip = (page - 1) * limit;
-  const expression = makeSearchExpression(query, broad);
   const params = new URLSearchParams({
-    search: expression,
+    search: makeUsSearchExpression(query, broad),
     limit: String(limit),
     skip: String(skip)
   });
-
   return `${NDC_ENDPOINT}?${params.toString()}`;
 }
 
-function scoreItem(item, query) {
+function buildEuSearchUrl(query, page) {
+  const params = new URLSearchParams({
+    q: query,
+    mode: els.searchMode.value,
+    limit: els.resultLimit.value,
+    page: String(page),
+    status: "Authorised"
+  });
+  return `${EU_ENDPOINT}?${params.toString()}`;
+}
+
+function scoreUsItem(item, query) {
   const kw = normalize(query);
   const tokens = kw.split(" ").filter((token) => token.length > 1);
   const brand = normalize(joinValues([item.brand_name, item.openfda?.brand_name], ""));
@@ -202,7 +252,7 @@ function scoreItem(item, query) {
   return Math.max(0, Math.min(score, 250));
 }
 
-function mapItem(item, index) {
+function mapUsItem(item, index) {
   const activeIngredients = getActiveIngredients(item);
   const packages = toArray(item.packaging);
   const packageNdcs = compactUnique(packages.map((pkg) => pkg.package_ndc));
@@ -210,9 +260,10 @@ function mapItem(item, index) {
   const productNdc = item.product_ndc || item.openfda?.product_ndc?.[0] || "";
 
   return {
-    id: `${productNdc || item.product_id || index}-${index}`,
+    id: `us-${productNdc || item.product_id || index}-${index}`,
+    source: "us",
     item,
-    score: scoreItem(item, state.query),
+    score: scoreUsItem(item, state.query),
     brand: joinValues([item.brand_name, item.openfda?.brand_name]),
     generic: joinValues([item.generic_name, item.openfda?.generic_name]),
     labeler: joinValues([item.labeler_name, item.openfda?.manufacturer_name]),
@@ -227,7 +278,18 @@ function mapItem(item, index) {
     marketingStart: item.marketing_start_date || "",
     splSetId,
     applicationNumber: item.application_number || "N/A",
-    packageCount: packages.length
+    packageCount: packages.length,
+    medicineUrl: "",
+    indication: ""
+  };
+}
+
+function mapEuItem(item, index) {
+  return {
+    ...item,
+    id: `eu-${item.id || item.productNdc || index}-${index}`,
+    source: "eu",
+    item
   };
 }
 
@@ -238,7 +300,7 @@ function sortRows(rows) {
   copy.sort((a, b) => {
     if (mode === "brand") return a.brand.localeCompare(b.brand);
     if (mode === "labeler") return a.labeler.localeCompare(b.labeler);
-    if (mode === "expiration") return String(b.listingExpiration).localeCompare(String(a.listingExpiration));
+    if (mode === "expiration") return dateValue(b.listingExpiration) - dateValue(a.listingExpiration);
     return b.score - a.score || a.brand.localeCompare(b.brand);
   });
 
@@ -269,11 +331,12 @@ function showError(message) {
 
 function syncUrlQuery(query) {
   const url = new URL(window.location.href);
-  if (query) {
-    url.searchParams.set("q", query);
-  } else {
-    url.searchParams.delete("q");
-  }
+  if (query) url.searchParams.set("q", query);
+  else url.searchParams.delete("q");
+
+  if (state.source === "us") url.searchParams.delete("source");
+  else url.searchParams.set("source", state.source);
+
   window.history.replaceState(null, "", url);
 }
 
@@ -285,26 +348,30 @@ function renderEmpty(message) {
   `;
 }
 
-function renderRows() {
+function currentRows() {
   const strict = els.strictMode.checked;
   let rows = sortRows(state.rows);
   if (strict) rows = rows.filter((row) => row.score >= 30);
+  return rows;
+}
 
+function renderRows() {
+  const rows = currentRows();
   els.resultCount.textContent = rows.length.toLocaleString();
 
   if (!rows.length) {
-    renderEmpty("조건에 맞는 OTC 제품이 없습니다.");
+    renderEmpty(SOURCES[state.source].empty);
     return;
   }
 
   els.resultsBody.innerHTML = rows.map((row, index) => {
-    const ingredientText = row.activeIngredients.slice(0, 4).map(escapeHtml).join("<br>");
-    const moreIngredients = row.activeIngredients.length > 4
-      ? `<span class="subtext">+${row.activeIngredients.length - 4} more</span>`
+    const ingredientText = toArray(row.activeIngredients).slice(0, 4).map(escapeHtml).join("<br>");
+    const moreIngredients = toArray(row.activeIngredients).length > 4
+      ? `<span class="subtext">+${toArray(row.activeIngredients).length - 4} more</span>`
       : "";
-    const packageText = row.packageNdcs.slice(0, 2).map(escapeHtml).join("<br>") || "N/A";
-    const packageMore = row.packageNdcs.length > 2
-      ? `<br><span class="subtext">+${row.packageNdcs.length - 2} packages</span>`
+    const packageText = toArray(row.packageNdcs).slice(0, 2).map(escapeHtml).join("<br>") || "N/A";
+    const packageMore = toArray(row.packageNdcs).length > 2
+      ? `<br><span class="subtext">+${toArray(row.packageNdcs).length - 2} more</span>`
       : "";
 
     return `
@@ -332,7 +399,7 @@ function renderRows() {
           <div class="subtext">${packageText}${packageMore}</div>
         </td>
         <td>
-          <button class="label-button" type="button" data-detail="${escapeHtml(row.id)}" aria-expanded="false">상세</button>
+          <button class="label-button" type="button" data-detail="${escapeHtml(row.id)}" aria-expanded="false">${SOURCES[state.source].detailButton}</button>
         </td>
       </tr>
     `;
@@ -344,7 +411,7 @@ function renderPager() {
   const lastPage = Math.max(1, Math.ceil(state.total / limit));
   els.pageLabel.textContent = `${state.page} / ${lastPage}`;
   els.prevPage.disabled = state.page <= 1;
-  els.nextPage.disabled = state.page >= lastPage || state.page * limit > 25000;
+  els.nextPage.disabled = state.page >= lastPage || (state.source === "us" && state.page * limit > 25000);
 }
 
 async function fetchJson(url) {
@@ -353,10 +420,7 @@ async function fetchJson(url) {
 
   if (response.status === 404 && body?.error?.code === "NOT_FOUND") {
     return {
-      meta: {
-        last_updated: body?.meta?.last_updated,
-        results: { total: 0, limit: 0, skip: 0 }
-      },
+      meta: { results: { total: 0, limit: 0, skip: 0 } },
       results: []
     };
   }
@@ -369,6 +433,50 @@ async function fetchJson(url) {
   return body;
 }
 
+async function runUsSearch(query, page, broad) {
+  const url = buildUsSearchUrl(query, page, broad);
+  state.lastSearchUrl = url;
+  let data = await fetchJson(url);
+  let items = data.results || [];
+  let total = data.meta?.results?.total || 0;
+
+  if (!items.length && !broad && els.searchMode.value === "smart") {
+    const fallbackUrl = buildUsSearchUrl(query, page, true);
+    state.lastSearchUrl = fallbackUrl;
+    data = await fetchJson(fallbackUrl);
+    items = data.results || [];
+    total = data.meta?.results?.total || 0;
+  }
+
+  state.total = total;
+  state.rawItems = items;
+  state.rows = items.map(mapUsItem);
+  if (data.meta?.last_updated) els.apiDate.textContent = `Updated ${data.meta.last_updated}`;
+
+  setStatus(
+    `Search: ${escapeHtml(query)}`,
+    `openFDA returned ${total.toLocaleString()} matches; showing ${items.length.toLocaleString()} on this page.`
+  );
+}
+
+async function runEuSearch(query, page) {
+  const url = buildEuSearchUrl(query, page);
+  state.lastSearchUrl = url;
+  const data = await fetchJson(url);
+  const items = data.results || [];
+  const total = data.meta?.results?.total || 0;
+
+  state.total = total;
+  state.rawItems = items;
+  state.rows = items.map(mapEuItem);
+  if (data.meta?.timestamp) els.apiDate.textContent = `Updated ${data.meta.timestamp.slice(0, 10)}`;
+
+  setStatus(
+    `Search: ${escapeHtml(query)}`,
+    `EMA returned ${total.toLocaleString()} authorised centralised matches; showing ${items.length.toLocaleString()} on this page.`
+  );
+}
+
 async function runSearch({ page = 1, broad = false } = {}) {
   const query = els.keyword.value.trim();
   if (!query) {
@@ -377,10 +485,10 @@ async function runSearch({ page = 1, broad = false } = {}) {
     state.total = 0;
     state.rows = [];
     state.rawItems = [];
-    setStatus("검색어를 입력하세요.", "FDA NDC Directory에서 현재 등록된 OTC 제품을 조회합니다.");
+    setStatus("Enter a search term.", "Choose US OTC or EU Centralized, then search by product, ingredient, code, or company.");
     els.resultCount.textContent = "0";
     renderPager();
-    renderEmpty("검색 결과가 여기에 표시됩니다.");
+    renderEmpty("Search results will appear here.");
     syncUrlQuery("");
     return;
   }
@@ -389,53 +497,31 @@ async function runSearch({ page = 1, broad = false } = {}) {
   state.page = page;
   syncUrlQuery(query);
   showError("");
-  setStatus(`검색 중: ${escapeHtml(query)}`, "openFDA NDC Directory를 조회하고 있습니다.");
+  setStatus(`Searching: ${escapeHtml(query)}`, `${SOURCES[state.source].label} data is loading.`);
   els.resultsBody.innerHTML = `
     <tr class="loading-row">
-      <td colspan="7" class="empty-state">검색 중입니다.</td>
+      <td colspan="7" class="empty-state">Searching...</td>
     </tr>
   `;
 
   try {
-    const url = buildSearchUrl(query, page, broad);
-    state.lastSearchUrl = url;
-    const data = await fetchJson(url);
-    let items = data.results || [];
-    let total = data.meta?.results?.total || 0;
-
-    if (!items.length && !broad && els.searchMode.value === "smart") {
-      const fallbackUrl = buildSearchUrl(query, page, true);
-      state.lastSearchUrl = fallbackUrl;
-      const fallbackData = await fetchJson(fallbackUrl);
-      items = fallbackData.results || [];
-      total = fallbackData.meta?.results?.total || 0;
-    }
-
-    state.total = total;
-    state.rawItems = items;
-    state.rows = items.map(mapItem);
-    const metaDate = data.meta?.last_updated;
-    if (metaDate) els.apiDate.textContent = `Updated ${metaDate}`;
-
-    setStatus(
-      `검색어: ${escapeHtml(query)}`,
-      `API 결과 ${total.toLocaleString()}건 중 ${items.length.toLocaleString()}건 표시`
-    );
+    if (state.source === "eu") await runEuSearch(query, page);
+    else await runUsSearch(query, page, broad);
     renderRows();
     renderPager();
   } catch (error) {
     state.total = 0;
     state.rows = [];
-    setStatus("검색 실패", "쿼리를 단순하게 바꾸거나 잠시 후 다시 시도하세요.");
+    setStatus("Search failed", "Try a simpler query or wait a moment before searching again.");
     showError(error.message);
     renderPager();
-    renderEmpty("openFDA 응답을 가져오지 못했습니다.");
+    renderEmpty(`${SOURCES[state.source].label} data could not be loaded.`);
   }
 }
 
-function makePackageMarkup(row) {
+function makeUsPackageMarkup(row) {
   const packages = toArray(row.item.packaging);
-  if (!packages.length) return '<p class="muted">등록된 package 정보가 없습니다.</p>';
+  if (!packages.length) return '<p class="muted">No package information is listed.</p>';
 
   return packages.map((pkg) => `
     <div class="detail-block">
@@ -446,7 +532,50 @@ function makePackageMarkup(row) {
   `).join("");
 }
 
+function makeEuDatasetMarkup(row) {
+  return `
+    <div class="detail-block">
+      <strong>Dataset</strong>
+      <div>EMA medicines JSON, centralised procedure only.</div>
+    </div>
+    <div class="detail-block">
+      <strong>OTC signal</strong>
+      <div>Not directly available in EMA dataset. Check SmPC/PIL or national register for legal supply status.</div>
+    </div>
+    <div class="detail-block">
+      <strong>Therapeutic area</strong>
+      <div>${escapeHtml(row.therapeuticArea || "N/A")}</div>
+    </div>
+  `;
+}
+
 function makeRegulatoryMarkup(row) {
+  if (row.source === "eu") {
+    return `
+      <div class="detail-block">
+        <strong>EMA product number</strong>
+        <div>${escapeHtml(row.productNdc)}</div>
+      </div>
+      <div class="detail-block">
+        <strong>Status</strong>
+        <div>${escapeHtml(row.productType)}</div>
+      </div>
+      <div class="detail-block">
+        <strong>Marketing authorisation date</strong>
+        <div>${escapeHtml(formatDate(row.marketingStart))}</div>
+      </div>
+      <div class="detail-block">
+        <strong>European Commission decision</strong>
+        <div>${escapeHtml(formatDate(row.decisionDate))}</div>
+      </div>
+      <div class="detail-block">
+        <strong>ATC</strong>
+        <div>${escapeHtml(row.atc || "N/A")}</div>
+      </div>
+      <a class="source-link" href="${escapeHtml(row.medicineUrl)}" target="_blank" rel="noreferrer">EMA medicine page</a>
+    `;
+  }
+
   const sourceUrl = `${NDC_ENDPOINT}?search=${encodeURIComponent(`product_ndc:${openFdaPhrase(row.productNdc)}`)}&limit=1`;
   return `
     <div class="detail-block">
@@ -471,12 +600,8 @@ function makeRegulatoryMarkup(row) {
 
 function labelSearchesFor(row) {
   const searches = [];
-  if (row.productNdc && row.productNdc !== "N/A") {
-    searches.push(`openfda.product_ndc:${openFdaPhrase(row.productNdc)}`);
-  }
-  if (row.splSetId) {
-    searches.push(`set_id:${openFdaPhrase(row.splSetId)}`);
-  }
+  if (row.productNdc && row.productNdc !== "N/A") searches.push(`openfda.product_ndc:${openFdaPhrase(row.productNdc)}`);
+  if (row.splSetId) searches.push(`set_id:${openFdaPhrase(row.splSetId)}`);
   return searches;
 }
 
@@ -489,7 +614,7 @@ function sectionText(label, keys) {
 }
 
 function makeLabelMarkup(label) {
-  if (!label) return '<p class="muted">연결된 Drug Label을 찾지 못했습니다.</p>';
+  if (!label) return '<p class="muted">No connected Drug Label was found.</p>';
 
   const sections = [
     ["Purpose", sectionText(label, ["purpose"])],
@@ -498,7 +623,7 @@ function makeLabelMarkup(label) {
     ["Warnings", sectionText(label, ["warnings", "do_not_use", "ask_doctor"])]
   ].filter(([, text]) => text);
 
-  if (!sections.length) return '<p class="muted">표시할 label section이 없습니다.</p>';
+  if (!sections.length) return '<p class="muted">No label section is available.</p>';
 
   return sections.map(([title, text]) => `
     <div class="detail-block">
@@ -508,7 +633,26 @@ function makeLabelMarkup(label) {
   `).join("");
 }
 
+function makeEuLabelMarkup(row) {
+  return `
+    <div class="detail-block">
+      <strong>Therapeutic indication</strong>
+      <div>${escapeHtml(row.indication || "N/A")}</div>
+    </div>
+    <div class="detail-block">
+      <strong>Last updated</strong>
+      <div>${escapeHtml(formatDate(row.lastUpdated || row.listingExpiration))}</div>
+    </div>
+    <div class="detail-block">
+      <strong>Revision</strong>
+      <div>${escapeHtml(row.revisionNumber || "N/A")}</div>
+    </div>
+  `;
+}
+
 async function fetchLabel(row) {
+  if (row.source !== "us") return null;
+
   const cacheKey = row.splSetId || row.productNdc;
   if (state.labelCache.has(cacheKey)) return state.labelCache.get(cacheKey);
 
@@ -532,14 +676,26 @@ async function fetchLabel(row) {
   return null;
 }
 
+function setDetailTitles(detail, row) {
+  const titles = detail.querySelectorAll("h3");
+  if (row.source === "eu") {
+    titles[0].textContent = "Dataset";
+    titles[1].textContent = "Regulatory";
+    titles[2].textContent = "Indication";
+    return;
+  }
+
+  titles[0].textContent = "Packages";
+  titles[1].textContent = "Regulatory";
+  titles[2].textContent = "Drug Label";
+}
+
 async function toggleDetail(button) {
   const rowId = button.dataset.detail;
-  const row = sortRows(state.rows).filter((item) => !els.strictMode.checked || item.score >= 30)
-    .find((item) => item.id === rowId);
+  const row = currentRows().find((item) => item.id === rowId);
   if (!row) return;
 
   const currentTr = button.closest("tr");
-  const next = currentTr.nextElementSibling;
   const isOpen = button.getAttribute("aria-expanded") === "true";
 
   document.querySelectorAll(".detail-row").forEach((detailRow) => detailRow.remove());
@@ -551,16 +707,52 @@ async function toggleDetail(button) {
 
   button.setAttribute("aria-expanded", "true");
   const detail = els.detailTemplate.content.firstElementChild.cloneNode(true);
-  detail.querySelector('[data-field="packages"]').innerHTML = makePackageMarkup(row);
+  setDetailTitles(detail, row);
+  detail.querySelector('[data-field="packages"]').innerHTML = row.source === "eu" ? makeEuDatasetMarkup(row) : makeUsPackageMarkup(row);
   detail.querySelector('[data-field="regulatory"]').innerHTML = makeRegulatoryMarkup(row);
-  detail.querySelector('[data-field="label"]').innerHTML = '<p class="muted">Drug Label 조회 중입니다.</p>';
+  detail.querySelector('[data-field="label"]').innerHTML = row.source === "eu"
+    ? makeEuLabelMarkup(row)
+    : '<p class="muted">Loading Drug Label...</p>';
   currentTr.after(detail);
 
-  if (next?.classList.contains("detail-row")) next.remove();
+  if (row.source === "eu") return;
 
   const label = await fetchLabel(row);
   if (button.getAttribute("aria-expanded") !== "true") return;
   detail.querySelector('[data-field="label"]').innerHTML = makeLabelMarkup(label);
+}
+
+function applySource(source, { run = false } = {}) {
+  state.source = SOURCES[source] ? source : "us";
+  const config = SOURCES[state.source];
+
+  els.sourceTabs.forEach((tab) => {
+    const active = tab.dataset.source === state.source;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", active ? "true" : "false");
+  });
+
+  els.sourceNote.textContent = config.note;
+  els.sourceBadge.textContent = config.badge;
+  els.apiDate.textContent = config.apiLabel;
+  els.keyword.placeholder = config.placeholder;
+  els.codeHeader.textContent = config.codeHeader;
+  els.formHeader.textContent = config.formHeader;
+  els.categoryControl.classList.toggle("is-hidden", state.source !== "us");
+  els.categoryFilter.disabled = state.source !== "us";
+  els.sortMode.querySelector('option[value="expiration"]').textContent = config.dateSortLabel;
+
+  state.page = 1;
+  state.total = 0;
+  state.rows = [];
+  state.rawItems = [];
+  showError("");
+  setStatus("Enter a search term.", config.note);
+  renderPager();
+  renderEmpty("Search results will appear here.");
+  syncUrlQuery(els.keyword.value.trim());
+
+  if (run && els.keyword.value.trim()) runSearch({ page: 1 });
 }
 
 els.form.addEventListener("submit", (event) => {
@@ -568,9 +760,15 @@ els.form.addEventListener("submit", (event) => {
   runSearch({ page: 1 });
 });
 
+els.sourceTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    applySource(tab.dataset.source, { run: Boolean(els.keyword.value.trim()) });
+  });
+});
+
 [els.searchMode, els.categoryFilter, els.resultLimit].forEach((control) => {
   control.addEventListener("change", () => {
-    if (state.query) runSearch({ page: 1 });
+    if (state.query || els.keyword.value.trim()) runSearch({ page: 1 });
   });
 });
 
@@ -595,7 +793,10 @@ els.resultsBody.addEventListener("click", (event) => {
 });
 
 const params = new URLSearchParams(window.location.search);
+const initialSource = params.get("source") || "us";
 const initialQuery = params.get("q");
+applySource(initialSource);
+
 if (initialQuery) {
   els.keyword.value = initialQuery;
   runSearch({ page: 1 });

@@ -1,20 +1,33 @@
 # OpenFDA
 
-미국 openFDA NDC Directory를 이용해 현재 등록된 OTC 제품을 검색하는 정적 웹앱입니다.
+OpenFDA is a small registry search app for CPP-country medicine checks.
 
-## 실행
+## Data Sources
 
-`index.html`을 브라우저에서 열면 됩니다. 별도 빌드 과정은 없습니다.
+- US OTC: `https://api.fda.gov/drug/ndc.json`
+- US Drug Label details: `https://api.fda.gov/drug/label.json`
+- EU Centralized: EMA medicines JSON dataset
+  - `https://www.ema.europa.eu/en/documents/report/medicines-output-medicines_json-report_en.json`
 
-검색어를 URL에 붙여 바로 열 수도 있습니다.
+US search filters `product_type:"HUMAN OTC DRUG"` and `finished:true` by default.
 
-```txt
-index.html?q=advil
+EU search uses EMA centralised-procedure medicines and filters to human, authorised products. EMA data does not directly identify OTC status, so EU results should be treated as authorization evidence and cross-checked against SmPC/PIL or national registers for legal supply status.
+
+## Run Locally
+
+```powershell
+node serve.mjs
 ```
 
-## 데이터 소스
+Open:
 
-- NDC Directory: `https://api.fda.gov/drug/ndc.json`
-- Drug Label: `https://api.fda.gov/drug/label.json`
+```txt
+http://127.0.0.1:8765/
+```
 
-검색은 `product_type:"HUMAN OTC DRUG"`와 `finished:true`를 기본으로 붙입니다. 상세 영역의 Drug Label은 제품을 펼칠 때만 추가로 조회합니다.
+URL search examples:
+
+```txt
+http://127.0.0.1:8765/?q=advil
+http://127.0.0.1:8765/?source=eu&q=emedastine
+```

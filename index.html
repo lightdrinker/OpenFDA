@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenFDA</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">United States OTC registry search</p>
+      <h1>OpenFDA</h1>
+    </div>
+    <div class="header-meta">
+      <span id="apiDate">openFDA NDC</span>
+      <span>HUMAN OTC DRUG</span>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="search-panel" aria-label="OTC search controls">
+      <form id="searchForm" class="search-form">
+        <div class="search-input-wrap">
+          <label for="keyword">검색어</label>
+          <input
+            id="keyword"
+            type="search"
+            autocomplete="off"
+            placeholder="예: advil, aspirin, acetaminophen, 0573-0147"
+          />
+        </div>
+        <button id="searchButton" type="submit">검색</button>
+      </form>
+
+      <div class="control-grid">
+        <div class="control-group">
+          <label for="searchMode">검색 범위</label>
+          <select id="searchMode">
+            <option value="smart">자동</option>
+            <option value="brand">브랜드</option>
+            <option value="ingredient">성분</option>
+            <option value="ndc">NDC</option>
+            <option value="labeler">회사</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="categoryFilter">Marketing category</label>
+          <select id="categoryFilter">
+            <option value="">전체</option>
+            <option value="OTC MONOGRAPH DRUG">OTC MONOGRAPH DRUG</option>
+            <option value="NDA">NDA</option>
+            <option value="ANDA">ANDA</option>
+            <option value="UNAPPROVED HOMEOPATHIC">UNAPPROVED HOMEOPATHIC</option>
+            <option value="BLA">BLA</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="resultLimit">표시 수</label>
+          <select id="resultLimit">
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="sortMode">정렬</label>
+          <select id="sortMode">
+            <option value="relevance">관련도</option>
+            <option value="brand">브랜드명</option>
+            <option value="labeler">회사명</option>
+            <option value="expiration">등재 만료일</option>
+          </select>
+        </div>
+
+        <label class="switch-row">
+          <input id="strictMode" type="checkbox" checked />
+          <span>낮은 관련도 숨김</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="status-bar" aria-live="polite">
+      <div id="statusTitle">검색어를 입력하세요.</div>
+      <div id="statusDetail">FDA NDC Directory에서 현재 등록된 OTC 제품을 조회합니다.</div>
+    </section>
+
+    <section id="errorBox" class="error-box" hidden></section>
+
+    <section class="results-shell">
+      <div class="results-toolbar">
+        <div>
+          <strong id="resultCount">0</strong>
+          <span>results</span>
+        </div>
+        <div class="pager">
+          <button id="prevPage" type="button" disabled>이전</button>
+          <span id="pageLabel">1</span>
+          <button id="nextPage" type="button" disabled>다음</button>
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th class="score-col">Score</th>
+              <th>Product</th>
+              <th>Ingredient</th>
+              <th>Company</th>
+              <th>Form</th>
+              <th>NDC</th>
+              <th class="action-col">Label</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody">
+            <tr>
+              <td colspan="7" class="empty-state">검색 결과가 여기에 표시됩니다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <template id="detailTemplate">
+    <tr class="detail-row">
+      <td colspan="7">
+        <div class="detail-grid">
+          <section>
+            <h3>Packages</h3>
+            <div data-field="packages"></div>
+          </section>
+          <section>
+            <h3>Regulatory</h3>
+            <div data-field="regulatory"></div>
+          </section>
+          <section>
+            <h3>Drug Label</h3>
+            <div data-field="label"></div>
+          </section>
+        </div>
+      </td>
+    </tr>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
+</html>

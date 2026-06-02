@@ -17,7 +17,7 @@ const SOURCES = {
     detailButton: "Detail"
   },
   eu: {
-    label: "EU Centralized",
+    label: "EMA Centralized",
     apiLabel: "EMA medicines JSON",
     badge: "Centralised procedure",
     note: "EU centralized medicines from EMA. EMA data does not directly mark OTC status, so use this as an authorization signal.",
@@ -27,6 +27,18 @@ const SOURCES = {
     formHeader: "Group",
     dateSortLabel: "Last updated",
     detailButton: "EMA"
+  },
+  fr: {
+    label: "France BDPM",
+    apiLabel: "France BDPM",
+    badge: "National register",
+    note: "France national medicines register from BDPM. CPD restrictions are shown when listed; OTC status should still be verified.",
+    placeholder: "Example: advil, nurofen, doliprane, ibuprofene, 68634000",
+    empty: "No matching France BDPM medicines.",
+    codeHeader: "CIS / CIP",
+    formHeader: "Form",
+    dateSortLabel: "AMM date",
+    detailButton: "BDPM"
   }
 };
 
@@ -221,6 +233,16 @@ function buildEuSearchUrl(query, page) {
   return `${EU_ENDPOINT}?${params.toString()}`;
 }
 
+function buildFrSearchUrl(query, page) {
+  const params = new URLSearchParams({
+    q: query,
+    mode: els.searchMode.value,
+    limit: els.resultLimit.value,
+    page: String(page)
+  });
+  return `/api/fr-search?${params.toString()}`;
+}
+
 function scoreUsItem(item, query) {
   const kw = normalize(query);
   const tokens = kw.split(" ").filter((token) => token.length > 1);
@@ -289,6 +311,15 @@ function mapEuItem(item, index) {
     ...item,
     id: `eu-${item.id || item.productNdc || index}-${index}`,
     source: "eu",
+    item
+  };
+}
+
+function mapFrItem(item, index) {
+  return {
+    ...item,
+    id: `fr-${item.id || item.productNdc || index}-${index}`,
+    source: "fr",
     item
   };
 }
@@ -477,6 +508,24 @@ async function runEuSearch(query, page) {
   );
 }
 
+async function runFrSearch(query, page) {
+  const url = buildFrSearchUrl(query, page);
+  state.lastSearchUrl = url;
+  const data = await fetchJson(url);
+  const items = data.results || [];
+  const total = data.meta?.results?.total || 0;
+
+  state.total = total;
+  state.rawItems = items;
+  state.rows = items.map(mapFrItem);
+  if (data.meta?.loadedAt) els.apiDate.textContent = `Loaded ${data.meta.loadedAt.slice(0, 10)}`;
+
+  setStatus(
+    `Search: ${escapeHtml(query)}`,
+    `France BDPM returned ${total.toLocaleString()} active commercialised matches; showing ${items.length.toLocaleString()} on this page.`
+  );
+}
+
 async function runSearch({ page = 1, broad = false } = {}) {
   const query = els.keyword.value.trim();
   if (!query) {
@@ -506,6 +555,7 @@ async function runSearch({ page = 1, broad = false } = {}) {
 
   try {
     if (state.source === "eu") await runEuSearch(query, page);
+    else if (state.source === "fr") await runFrSearch(query, page);
     else await runUsSearch(query, page, broad);
     renderRows();
     renderPager();
@@ -549,6 +599,20 @@ function makeEuDatasetMarkup(row) {
   `;
 }
 
+function makeFrPresentationMarkup(row) {
+  const presentations = toArray(row.presentations);
+  if (!presentations.length) return '<p class="muted">No presentation information is listed.</p>';
+
+  return presentations.map((presentation) => `
+    <div class="detail-block">
+      <strong>${escapeHtml(presentation.cip13 || presentation.cip7 || "N/A")}</strong>
+      <div>${escapeHtml(presentation.label || "N/A")}</div>
+      <div class="muted">${escapeHtml(presentation.status || "N/A")} / ${escapeHtml(presentation.commercialStatus || "N/A")}</div>
+      <div class="muted">Reimbursement: ${escapeHtml(presentation.reimbursementRate || "N/A")} / Price: ${escapeHtml(presentation.price || "N/A")}</div>
+    </div>
+  `).join("");
+}
+
 function makeRegulatoryMarkup(row) {
   if (row.source === "eu") {
     return `
@@ -573,6 +637,36 @@ function makeRegulatoryMarkup(row) {
         <div>${escapeHtml(row.atc || "N/A")}</div>
       </div>
       <a class="source-link" href="${escapeHtml(row.medicineUrl)}" target="_blank" rel="noreferrer">EMA medicine page</a>
+    `;
+  }
+
+  if (row.source === "fr") {
+    return `
+      <div class="detail-block">
+        <strong>Code CIS</strong>
+        <div>${escapeHtml(row.productNdc)}</div>
+      </div>
+      <div class="detail-block">
+        <strong>AMM status</strong>
+        <div>${escapeHtml(row.category)}</div>
+      </div>
+      <div class="detail-block">
+        <strong>Commercial status</strong>
+        <div>${escapeHtml(row.productType)}</div>
+      </div>
+      <div class="detail-block">
+        <strong>Procedure</strong>
+        <div>${escapeHtml(row.procedure || "N/A")}</div>
+      </div>
+      <div class="detail-block">
+        <strong>AMM date</strong>
+        <div>${escapeHtml(formatDate(row.marketingStart))}</div>
+      </div>
+      <div class="detail-block">
+        <strong>ATC</strong>
+        <div>${escapeHtml(row.atc || "N/A")}</div>
+      </div>
+      <a class="source-link" href="${escapeHtml(row.medicineUrl)}" target="_blank" rel="noreferrer">BDPM medicine page</a>
     `;
   }
 
@@ -650,6 +744,28 @@ function makeEuLabelMarkup(row) {
   `;
 }
 
+function makeFrConditionMarkup(row) {
+  const conditions = toArray(row.conditions);
+  const conditionMarkup = conditions.length
+    ? conditions.map((condition) => `<div>${escapeHtml(condition)}</div>`).join("")
+    : '<div>No CPD restriction listed in BDPM.</div>';
+
+  return `
+    <div class="detail-block">
+      <strong>Supply signal</strong>
+      <div>${escapeHtml(row.supplySignal || "N/A")}</div>
+    </div>
+    <div class="detail-block">
+      <strong>Conditions de prescription et de delivrance</strong>
+      ${conditionMarkup}
+    </div>
+    <div class="detail-block">
+      <strong>Note</strong>
+      <div>Absence of a CPD restriction is useful, but final OTC/legal supply status should be verified in the official product page.</div>
+    </div>
+  `;
+}
+
 async function fetchLabel(row) {
   if (row.source !== "us") return null;
 
@@ -685,6 +801,13 @@ function setDetailTitles(detail, row) {
     return;
   }
 
+  if (row.source === "fr") {
+    titles[0].textContent = "Presentations";
+    titles[1].textContent = "Regulatory";
+    titles[2].textContent = "Supply";
+    return;
+  }
+
   titles[0].textContent = "Packages";
   titles[1].textContent = "Regulatory";
   titles[2].textContent = "Drug Label";
@@ -708,14 +831,20 @@ async function toggleDetail(button) {
   button.setAttribute("aria-expanded", "true");
   const detail = els.detailTemplate.content.firstElementChild.cloneNode(true);
   setDetailTitles(detail, row);
-  detail.querySelector('[data-field="packages"]').innerHTML = row.source === "eu" ? makeEuDatasetMarkup(row) : makeUsPackageMarkup(row);
+  detail.querySelector('[data-field="packages"]').innerHTML = row.source === "eu"
+    ? makeEuDatasetMarkup(row)
+    : row.source === "fr"
+      ? makeFrPresentationMarkup(row)
+      : makeUsPackageMarkup(row);
   detail.querySelector('[data-field="regulatory"]').innerHTML = makeRegulatoryMarkup(row);
   detail.querySelector('[data-field="label"]').innerHTML = row.source === "eu"
     ? makeEuLabelMarkup(row)
-    : '<p class="muted">Loading Drug Label...</p>';
+    : row.source === "fr"
+      ? makeFrConditionMarkup(row)
+      : '<p class="muted">Loading Drug Label...</p>';
   currentTr.after(detail);
 
-  if (row.source === "eu") return;
+  if (row.source !== "us") return;
 
   const label = await fetchLabel(row);
   if (button.getAttribute("aria-expanded") !== "true") return;

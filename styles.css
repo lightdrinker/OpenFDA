@@ -161,6 +161,21 @@ h1 {
   line-height: 1.4;
 }
 
+.source-warnings {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.warning-item {
+  border-left: 3px solid var(--amber);
+  background: #fff8ea;
+  color: #5f4500;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .is-hidden {
   display: none !important;
 }
@@ -242,6 +257,30 @@ h1 {
 
 .results-shell {
   margin-top: 12px;
+}
+
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 14px;
+  padding: 18px clamp(12px, 3vw, 32px) 28px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.app-footer a {
+  color: var(--blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.app-footer a:hover {
+  text-decoration: underline;
+}
+
+.credit-name {
+  color: var(--ink);
 }
 
 .results-toolbar {

@@ -4,6 +4,7 @@ const LABEL_ENDPOINT = `${API_BASE}/drug/label.json`;
 const EU_ENDPOINT = "/api/eu-search";
 const UK_ENDPOINT = "/api/uk-search";
 const DE_ENDPOINT = "/api/de-search";
+const JP_ENDPOINT = "/api/jp-search";
 
 const SOURCES = {
   us: {
@@ -16,7 +17,11 @@ const SOURCES = {
     codeHeader: "NDC",
     formHeader: "Form",
     dateSortLabel: "Listing expiration",
-    detailButton: "Detail"
+    detailButton: "Detail",
+    warnings: [
+      "Filtered to openFDA NDC entries with product_type HUMAN OTC DRUG and finished:true.",
+      "NDC listing is strong registration evidence, but final CPP/legal review should still verify the official label, monograph/NDA/ANDA status, and current marketing status."
+    ]
   },
   uk: {
     label: "UK MHRA",
@@ -28,7 +33,11 @@ const SOURCES = {
     codeHeader: "PL No.",
     formHeader: "Document",
     dateSortLabel: "Document date",
-    detailButton: "MHRA"
+    detailButton: "MHRA",
+    warnings: [
+      "MHRA Products results are document-centric (SmPC/PIL/PAR), not a clean product master table.",
+      "P/GSL/POM legal supply category is not exposed as a structured field here; verify it in the linked SmPC/PIL or official UK source."
+    ]
   },
   eu: {
     label: "EMA Centralized",
@@ -40,7 +49,11 @@ const SOURCES = {
     codeHeader: "EMA No.",
     formHeader: "Group",
     dateSortLabel: "Last updated",
-    detailButton: "EMA"
+    detailButton: "EMA",
+    warnings: [
+      "EMA data covers centralised-procedure medicines only, not all EU national OTC products.",
+      "EMA dataset does not directly mark OTC/legal supply status; use it as authorization evidence and verify national status separately."
+    ]
   },
   fr: {
     label: "France BDPM",
@@ -52,7 +65,11 @@ const SOURCES = {
     codeHeader: "CIS / CIP",
     formHeader: "Form",
     dateSortLabel: "AMM date",
-    detailButton: "BDPM"
+    detailButton: "BDPM",
+    warnings: [
+      "BDPM is a national register and shows CPD restrictions when listed.",
+      "No CPD restriction listed is useful but does not automatically prove OTC status; verify the official BDPM page for final legal supply status."
+    ]
   },
   de: {
     label: "Germany AMIce",
@@ -66,7 +83,29 @@ const SOURCES = {
     dateSortLabel: "Updated",
     detailButton: "AMIce",
     manualUrl: "https://portal.dimdi.de/amguifree/?accessid=amis_off_am_ppv&lang=de",
-    manualLabel: "Open AMIce Public Part"
+    manualLabel: "Open AMIce Public Part",
+    warnings: [
+      "BfArM AMIce Public Part is the official German register, but this app has no stable server-readable JSON/API endpoint for automated results.",
+      "Use the linked AMIce portal manually for Germany verification."
+    ]
+  },
+  jp: {
+    label: "Japan PMDA",
+    apiLabel: "PMDA OTC/BTC",
+    badge: "Product-name index",
+    note: "Japan PMDA general-use / guidance-required medicine package-insert search index. This tab searches the official product-name index.",
+    placeholder: "Example: イブ, バファリン, ロキソニン, アレグラ, EVE",
+    empty: "No matching Japan PMDA product names.",
+    codeHeader: "PMDA",
+    formHeader: "Index",
+    dateSortLabel: "Loaded",
+    detailButton: "PMDA",
+    manualUrl: "https://www.pmda.go.jp/PmdaSearch/otcSearch/",
+    manualLabel: "Open PMDA OTC search",
+    warnings: [
+      "This Japan tab searches PMDA's official OTC/guidance-required product-name index only.",
+      "Ingredient, company, risk category (要指導/第1類/第2類/第3類), and package insert details must be verified on the PMDA search page."
+    ]
   }
 };
 
@@ -86,6 +125,7 @@ const els = {
   keyword: document.getElementById("keyword"),
   sourceTabs: document.querySelectorAll("[data-source]"),
   sourceNote: document.getElementById("sourceNote"),
+  sourceWarnings: document.getElementById("sourceWarnings"),
   sourceBadge: document.getElementById("sourceBadge"),
   searchMode: document.getElementById("searchMode"),
   categoryControl: document.getElementById("categoryControl"),
@@ -292,6 +332,16 @@ function buildDeSearchUrl(query, page) {
   return `${DE_ENDPOINT}?${params.toString()}`;
 }
 
+function buildJpSearchUrl(query, page) {
+  const params = new URLSearchParams({
+    q: query,
+    mode: els.searchMode.value,
+    limit: els.resultLimit.value,
+    page: String(page)
+  });
+  return `${JP_ENDPOINT}?${params.toString()}`;
+}
+
 function scoreUsItem(item, query) {
   const kw = normalize(query);
   const tokens = kw.split(" ").filter((token) => token.length > 1);
@@ -391,6 +441,15 @@ function mapDeItem(item, index) {
   };
 }
 
+function mapJpItem(item, index) {
+  return {
+    ...item,
+    id: `jp-${item.id || item.brand || index}-${index}`,
+    source: "jp",
+    item
+  };
+}
+
 function sortRows(rows) {
   const mode = els.sortMode.value;
   const copy = [...rows];
@@ -449,6 +508,20 @@ function renderEmpty(message) {
 function sourceLink(config) {
   if (!config.manualUrl) return "";
   return `<a class="inline-link" href="${escapeHtml(config.manualUrl)}" target="_blank" rel="noreferrer">${escapeHtml(config.manualLabel || "Open source")}</a>`;
+}
+
+function renderWarnings() {
+  const warnings = SOURCES[state.source].warnings || [];
+  if (!warnings.length) {
+    els.sourceWarnings.innerHTML = "";
+    els.sourceWarnings.hidden = true;
+    return;
+  }
+
+  els.sourceWarnings.hidden = false;
+  els.sourceWarnings.innerHTML = warnings
+    .map((warning) => `<div class="warning-item">${escapeHtml(warning)}</div>`)
+    .join("");
 }
 
 function renderSourceEmpty() {
@@ -646,6 +719,24 @@ async function runDeSearch(query, page) {
   );
 }
 
+async function runJpSearch(query, page) {
+  const url = buildJpSearchUrl(query, page);
+  state.lastSearchUrl = url;
+  const data = await fetchJson(url);
+  const items = data.results || [];
+  const total = data.meta?.results?.total || 0;
+
+  state.total = total;
+  state.rawItems = items;
+  state.rows = items.map(mapJpItem);
+  if (data.meta?.loadedAt) els.apiDate.textContent = `Loaded ${data.meta.loadedAt.slice(0, 10)}`;
+
+  setStatus(
+    `Search: ${escapeHtml(query)}`,
+    `PMDA index returned ${total.toLocaleString()} product-name matches; showing ${items.length.toLocaleString()} on this page. Verify risk category and details on PMDA.`
+  );
+}
+
 async function runSearch({ page = 1, broad = false } = {}) {
   const query = els.keyword.value.trim();
   if (!query) {
@@ -678,6 +769,7 @@ async function runSearch({ page = 1, broad = false } = {}) {
     else if (state.source === "fr") await runFrSearch(query, page);
     else if (state.source === "uk") await runUkSearch(query, page);
     else if (state.source === "de") await runDeSearch(query, page);
+    else if (state.source === "jp") await runJpSearch(query, page);
     else await runUsSearch(query, page, broad);
     renderRows();
     renderPager();
@@ -750,7 +842,39 @@ function makeUkDocumentMarkup(row) {
   `;
 }
 
+function makeJpIndexMarkup(row) {
+  return `
+    <div class="detail-block">
+      <strong>PMDA product name</strong>
+      <div>${escapeHtml(row.brand)}</div>
+    </div>
+    <div class="detail-block">
+      <strong>Index type</strong>
+      <div>${escapeHtml(row.productType || "Package insert search index")}</div>
+    </div>
+    <a class="source-link" href="${escapeHtml(row.medicineUrl)}" target="_blank" rel="noreferrer">PMDA OTC search</a>
+  `;
+}
+
 function makeRegulatoryMarkup(row) {
+  if (row.source === "jp") {
+    return `
+      <div class="detail-block">
+        <strong>Source</strong>
+        <div>PMDA general-use / guidance-required medicine search</div>
+      </div>
+      <div class="detail-block">
+        <strong>Structured fields</strong>
+        <div>Product name index only in this app.</div>
+      </div>
+      <div class="detail-block">
+        <strong>Required verification</strong>
+        <div>Confirm risk category, ingredient, company, and package insert on PMDA.</div>
+      </div>
+      <a class="source-link" href="${escapeHtml(row.medicineUrl)}" target="_blank" rel="noreferrer">PMDA OTC search</a>
+    `;
+  }
+
   if (row.source === "uk") {
     const productSearchUrl = `https://products.mhra.gov.uk/search/?search=${encodeURIComponent(row.productNdc)}`;
     return `
@@ -939,6 +1063,19 @@ function makeUkContextMarkup(row) {
   `;
 }
 
+function makeJpContextMarkup(row) {
+  return `
+    <div class="detail-block">
+      <strong>Supply signal</strong>
+      <div>${escapeHtml(row.supplySignal || "Verify on PMDA.")}</div>
+    </div>
+    <div class="detail-block">
+      <strong>Note</strong>
+      <div>PMDA's product-name index confirms the name is in the OTC/guidance-required search surface, but this app does not yet extract the detailed package insert fields.</div>
+    </div>
+  `;
+}
+
 async function fetchLabel(row) {
   if (row.source !== "us") return null;
 
@@ -988,6 +1125,13 @@ function setDetailTitles(detail, row) {
     return;
   }
 
+  if (row.source === "jp") {
+    titles[0].textContent = "PMDA Index";
+    titles[1].textContent = "Verification";
+    titles[2].textContent = "Caveat";
+    return;
+  }
+
   titles[0].textContent = "Packages";
   titles[1].textContent = "Regulatory";
   titles[2].textContent = "Drug Label";
@@ -1017,6 +1161,8 @@ async function toggleDetail(button) {
       ? makeFrPresentationMarkup(row)
       : row.source === "uk"
         ? makeUkDocumentMarkup(row)
+      : row.source === "jp"
+        ? makeJpIndexMarkup(row)
       : makeUsPackageMarkup(row);
   detail.querySelector('[data-field="regulatory"]').innerHTML = makeRegulatoryMarkup(row);
   detail.querySelector('[data-field="label"]').innerHTML = row.source === "eu"
@@ -1025,6 +1171,8 @@ async function toggleDetail(button) {
       ? makeFrConditionMarkup(row)
       : row.source === "uk"
         ? makeUkContextMarkup(row)
+      : row.source === "jp"
+        ? makeJpContextMarkup(row)
       : '<p class="muted">Loading Drug Label...</p>';
   currentTr.after(detail);
 
@@ -1046,6 +1194,7 @@ function applySource(source, { run = false } = {}) {
   });
 
   els.sourceNote.innerHTML = `${escapeHtml(config.note)} ${sourceLink(config)}`;
+  renderWarnings();
   els.sourceBadge.textContent = config.badge;
   els.apiDate.textContent = config.apiLabel;
   els.keyword.placeholder = config.placeholder;

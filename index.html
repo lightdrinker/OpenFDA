@@ -25,12 +25,14 @@
         <button class="source-tab" type="button" data-source="uk" aria-selected="false">UK MHRA</button>
         <button class="source-tab" type="button" data-source="fr" aria-selected="false">France BDPM</button>
         <button class="source-tab" type="button" data-source="de" aria-selected="false">Germany AMIce</button>
+        <button class="source-tab" type="button" data-source="jp" aria-selected="false">Japan PMDA</button>
         <button class="source-tab" type="button" data-source="eu" aria-selected="false">EMA Centralized</button>
       </div>
 
       <div id="sourceNote" class="source-note">
         United States OTC products from openFDA NDC Directory.
       </div>
+      <div id="sourceWarnings" class="source-warnings" aria-live="polite"></div>
 
       <form id="searchForm" class="search-form">
         <div class="search-input-wrap">
@@ -137,6 +139,12 @@
       </div>
     </section>
   </main>
+
+  <footer class="app-footer">
+    <span>OpenFDA</span>
+    <span>Built by <strong class="credit-name">Jun</strong></span>
+    <a href="mailto:lightdrinker@naver.com">lightdrinker@naver.com</a>
+  </footer>
 
   <template id="detailTemplate">
     <tr class="detail-row">

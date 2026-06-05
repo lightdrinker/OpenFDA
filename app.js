@@ -331,6 +331,7 @@ const SOURCE_I18N = {
   },
   de: {
     label: { en: "Germany AMIce", ko: "독일 AMIce" },
+    badge: { en: "Manual portal", ko: "수동 포털" },
     note: { en: "Germany AMIce must be checked in the official BfArM portal from this app.", ko: "독일 AMIce는 이 앱에서 공식 BfArM 포털로 확인합니다." },
     placeholder: { en: "Example: ibuprofen, aspirin, nurofen, Zul.-Nr.", ko: "예: ibuprofen, aspirin, nurofen, Zul.-Nr." },
     empty: { en: "Use the official AMIce portal for Germany product, ingredient, company, authorisation number, and register checks.", ko: "독일 제품명, 성분명, 회사명, 허가번호, 등록 상태는 공식 AMIce 포털에서 확인하세요." },

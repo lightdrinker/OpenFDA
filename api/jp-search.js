@@ -1,25 +1,67 @@
 const PMDA_OTC_INDEX_URL = "https://www.pmda.go.jp/PmdaSearch/js/data/otc/list_n.lib";
 const PMDA_OTC_SEARCH_URL = "https://www.pmda.go.jp/PmdaSearch/otcSearch/";
 const CACHE_MS = 6 * 60 * 60 * 1000;
-const QUERY_ALIAS_OVERRIDES = {
-  eve: ["\u30a4\u30d6"],
-  bufferin: ["\u30d0\u30d5\u30a1\u30ea\u30f3"],
-  loxonin: ["\u30ed\u30ad\u30bd\u30cb\u30f3"],
-  allegra: ["\u30a2\u30ec\u30b0\u30e9"],
-  tylenol: ["\u30bf\u30a4\u30ec\u30ce\u30fc\u30eb"],
-  aspirin: ["\u30a2\u30b9\u30d4\u30ea\u30f3"],
-  pabron: ["\u30d1\u30d6\u30ed\u30f3"],
-  advil: ["\u30a2\u30c9\u30d3\u30eb"]
-};
+
 const QUERY_ALIASES = {
-  eve: ["イブ"],
-  bufferin: ["バファリン"],
-  loxonin: ["ロキソニン"],
-  allegra: ["アレグラ"],
-  tylenol: ["タイレノール"],
-  aspirin: ["アスピリン"],
-  pabron: ["パブロン"]
+  advil: ["\u30a2\u30c9\u30d3\u30eb"],
+  allegra: ["\u30a2\u30ec\u30b0\u30e9"],
+  aneton: ["\u30a2\u30cd\u30c8\u30f3"],
+  aspirin: ["\u30a2\u30b9\u30d4\u30ea\u30f3", "\u30d0\u30d5\u30a1\u30ea\u30f3"],
+  benza: ["\u30d9\u30f3\u30b6"],
+  bufferin: ["\u30d0\u30d5\u30a1\u30ea\u30f3"],
+  cabagin: ["\u30ad\u30e3\u30d9\u30b8\u30f3"],
+  contac: ["\u30b3\u30f3\u30bf\u30c3\u30af"],
+  eve: ["\u30a4\u30d6"],
+  loxonin: ["\u30ed\u30ad\u30bd\u30cb\u30f3"],
+  muhi: ["\u30e0\u30d2"],
+  pabron: ["\u30d1\u30d6\u30ed\u30f3"],
+  rohto: ["\u30ed\u30fc\u30c8"],
+  salonpas: ["\u30b5\u30ed\u30f3\u30d1\u30b9"],
+  seirogan: ["\u6b63\u9732\u4e38"],
+  tylenol: ["\u30bf\u30a4\u30ec\u30ce\u30fc\u30eb"],
+  vicks: ["\u30f4\u30a4\u30c3\u30af\u30b9", "\u30f4\u30a3\u30c3\u30af\u30b9"],
+  voltaren: ["\u30dc\u30eb\u30bf\u30ec\u30f3"],
+
+  acetaminophen: ["\u30a2\u30bb\u30c8\u30a2\u30df\u30ce\u30d5\u30a7\u30f3", "\u30bf\u30a4\u30ec\u30ce\u30fc\u30eb"],
+  ambroxol: ["\u30a2\u30f3\u30d6\u30ed\u30ad\u30bd\u30fc\u30eb"],
+  bromhexine: ["\u30d6\u30ed\u30e0\u30d8\u30ad\u30b7\u30f3"],
+  carbocisteine: ["\u30ab\u30eb\u30dc\u30b7\u30b9\u30c6\u30a4\u30f3"],
+  cetirizine: ["\u30bb\u30c1\u30ea\u30b8\u30f3"],
+  chlorpheniramine: ["\u30af\u30ed\u30eb\u30d5\u30a7\u30cb\u30e9\u30df\u30f3"],
+  dextromethorphan: ["\u30c7\u30ad\u30b9\u30c8\u30ed\u30e1\u30c8\u30eb\u30d5\u30a1\u30f3"],
+  diphenhydramine: ["\u30b8\u30d5\u30a7\u30f3\u30d2\u30c9\u30e9\u30df\u30f3", "\u30c9\u30ea\u30a8\u30eb"],
+  famotidine: ["\u30d5\u30a1\u30e2\u30c1\u30b8\u30f3", "\u30ac\u30b9\u30bf\u30fc"],
+  fexofenadine: ["\u30d5\u30a7\u30ad\u30bd\u30d5\u30a7\u30ca\u30b8\u30f3", "\u30a2\u30ec\u30b0\u30e9"],
+  ibuprofen: ["\u30a4\u30d6\u30d7\u30ed\u30d5\u30a7\u30f3", "\u30a4\u30d6"],
+  loperamide: ["\u30ed\u30da\u30e9\u30df\u30c9"],
+  loratadine: ["\u30ed\u30e9\u30bf\u30b8\u30f3", "\u30af\u30e9\u30ea\u30c1\u30f3"],
+  loxoprofen: ["\u30ed\u30ad\u30bd\u30d7\u30ed\u30d5\u30a7\u30f3", "\u30ed\u30ad\u30bd\u30cb\u30f3"],
+  paracetamol: ["\u30a2\u30bb\u30c8\u30a2\u30df\u30ce\u30d5\u30a7\u30f3", "\u30bf\u30a4\u30ec\u30ce\u30fc\u30eb"],
+  pseudoephedrine: ["\u30d7\u30bd\u30a4\u30c9\u30a8\u30d5\u30a7\u30c9\u30ea\u30f3"],
+  tranexamic: ["\u30c8\u30e9\u30cd\u30ad\u30b5\u30e0\u9178"],
+  "tranexamic acid": ["\u30c8\u30e9\u30cd\u30ad\u30b5\u30e0\u9178"]
 };
+
+const MANUAL_FIELD_MODES = {
+  ingredient: {
+    field: "ingredient",
+    officialName: "PMDA ingredient search"
+  },
+  labeler: {
+    field: "company",
+    officialName: "PMDA manufacturer / seller search"
+  },
+  ndc: {
+    field: "code",
+    officialName: "PMDA official search"
+  }
+};
+
+const SMART_MANUAL_COMPANY_TERMS = new Set([
+  "haleon",
+  "gsk",
+  "glaxosmithkline"
+]);
 
 let cachedPayload = null;
 let cachedAt = 0;
@@ -35,7 +77,7 @@ function normalize(value) {
     .normalize("NFKC")
     .toLowerCase()
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9ぁ-んァ-ン一-龯]+/g, " ")
+    .replace(/[^\p{Letter}\p{Number}]+/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -82,7 +124,8 @@ async function loadIndex() {
 function queryVariants(queryText) {
   const variants = [queryText];
   const aliasKey = compact(queryText);
-  (QUERY_ALIAS_OVERRIDES[aliasKey] || QUERY_ALIASES[aliasKey] || []).forEach((alias) => variants.push(alias));
+  (QUERY_ALIASES[aliasKey] || []).forEach((alias) => variants.push(alias));
+
   return variants.map((variant) => ({
     raw: variant,
     normalized: normalize(variant),
@@ -111,19 +154,19 @@ function scoreName(name, variants) {
   return Math.max(...variants.map((variant) => scoreNameAgainstVariant(name, variant)));
 }
 
-function mapName(name, score) {
+function mapName(name, score, aliasesUsed) {
   return {
     id: name,
     source: "jp",
     score,
     brand: name,
-    generic: "Verify in PMDA",
+    generic: aliasesUsed ? "Product-name alias match" : "Verify in PMDA",
     labeler: "N/A",
     activeIngredients: ["N/A"],
     dosageForm: "PMDA product-name index",
     route: "General-use / guidance-required medicines",
     category: "Japan PMDA OTC/BTC",
-    productType: "Package insert search index",
+    productType: aliasesUsed ? "Package insert search index + alias" : "Package insert search index",
     productNdc: "PMDA OTC",
     packageNdcs: ["Official PMDA index"],
     listingExpiration: "",
@@ -144,6 +187,27 @@ function sendJson(response, statusCode, payload) {
   response.end(JSON.stringify(payload));
 }
 
+function sendManualFieldResponse(response, { queryText, mode, limit, skip, reason }) {
+  const fieldConfig = MANUAL_FIELD_MODES[mode] || {
+    field: reason || "official PMDA field",
+    officialName: "PMDA official search"
+  };
+
+  sendJson(response, 200, {
+    meta: {
+      source: "PMDA OTC/BTC official portal",
+      sourceUrl: PMDA_OTC_SEARCH_URL,
+      accessMode: "manual-field",
+      field: fieldConfig.field,
+      officialName: fieldConfig.officialName,
+      query: queryText,
+      results: { total: 0, limit, skip },
+      notice: "The official PMDA OTC/BTC portal supports this field, but this app currently automates only the public product-name suggestion index. Use the official PMDA portal for ingredient, company, risk category, and package insert verification."
+    },
+    results: []
+  });
+}
+
 module.exports = async function handler(request, response) {
   if (request.method === "OPTIONS") {
     response.statusCode = 204;
@@ -154,18 +218,19 @@ module.exports = async function handler(request, response) {
   try {
     const url = new URL(request.url || "/", `https://${request.headers.host || "localhost"}`);
     const queryText = (url.searchParams.get("q") || "").trim();
+    const mode = (url.searchParams.get("mode") || "smart").trim();
     const page = Math.max(1, Number(url.searchParams.get("page") || "1"));
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || "20")));
     const skip = (page - 1) * limit;
-    const payload = await loadIndex();
     const query = {
       raw: queryText,
       normalized: normalize(queryText),
+      compact: compact(queryText),
       tokens: queryTokens(queryText)
     };
-    const variants = queryVariants(queryText);
 
     if (!query.normalized) {
+      const payload = await loadIndex();
       sendJson(response, 200, {
         meta: {
           source: "PMDA OTC/BTC product-name index",
@@ -179,11 +244,25 @@ module.exports = async function handler(request, response) {
       return;
     }
 
+    if (MANUAL_FIELD_MODES[mode]) {
+      sendManualFieldResponse(response, { queryText, mode, limit, skip });
+      return;
+    }
+
+    if (mode === "smart" && SMART_MANUAL_COMPANY_TERMS.has(query.compact)) {
+      sendManualFieldResponse(response, { queryText, mode: "labeler", limit, skip, reason: "company" });
+      return;
+    }
+
+    const payload = await loadIndex();
+    const variants = queryVariants(queryText);
+    const aliasesUsed = variants.length > 1;
+
     const rows = payload.names
       .map((name) => ({ name, score: scoreName(name, variants) }))
       .filter((entry) => entry.score > 0)
       .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, "ja"))
-      .map((entry) => mapName(entry.name, entry.score));
+      .map((entry) => mapName(entry.name, entry.score, aliasesUsed));
 
     sendJson(response, 200, {
       meta: {
@@ -191,8 +270,11 @@ module.exports = async function handler(request, response) {
         sourceUrl: PMDA_OTC_SEARCH_URL,
         loadedAt: payload.loadedAt,
         total_records: payload.names.length,
+        aliasesUsed,
+        queryVariants: variants.map((variant) => variant.raw),
+        searchScope: "product-name-index",
         results: { total: rows.length, limit, skip },
-        notice: "PMDA exposes a lightweight official product-name index for OTC/guidance-required medicines. This app searches that index; ingredient, company, risk category, and package insert details must be verified on the PMDA search page."
+        notice: "PMDA's official portal supports product name, ingredient, company, risk category, and package-insert searches. This API endpoint currently searches only the public product-name suggestion index, with a small English-to-Japanese alias dictionary."
       },
       results: rows.slice(skip, skip + limit)
     });

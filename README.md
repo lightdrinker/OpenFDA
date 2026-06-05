@@ -25,7 +25,7 @@ UK search uses the MHRA Products search index and returns medicine documents suc
 
 Germany AMIce Public Part is the official public German register. Its public portal is linked in the app, but a stable server-readable JSON/API endpoint was not available during implementation, so Germany is currently a manual verification tab rather than an automated result table.
 
-Japan search uses PMDA's official OTC/guidance-required medicine product-name index. It is fast and lightweight, but currently returns product-name matches only; ingredient, company, risk category, and package insert details should be verified in the PMDA search page.
+Japan PMDA's official OTC/guidance-required portal supports product-name, ingredient, company, risk-category, and package-insert searches. This app currently automates PMDA's public product-name suggestion index only, with a small English-to-Japanese alias dictionary. Ingredient/company field selections in the app route users to manual PMDA verification instead of presenting product-name-index misses as authoritative no-results.
 
 ## Run Locally
 

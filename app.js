@@ -67,6 +67,8 @@ const UI_TEXT = {
     jpStatus: "PMDA product-name index returned {total} matches; showing {shown} on this page.",
     jpNoMatchTitle: "No PMDA product-name match",
     jpNoMatchDetail: "Search term: {query}. Try a Japanese product name or use PMDA search from Source limits.",
+    jpOfficialFieldTitle: "Official PMDA field search",
+    jpOfficialFieldDetail: "PMDA supports {field} search in the official portal, but this app currently automates only the product-name suggestion index. Search term: {query}.",
     packages: "Packages",
     regulatory: "Regulatory",
     label: "Label",
@@ -130,6 +132,8 @@ const UI_TEXT = {
     jpStatus: "PMDA 제품명 색인에서 {total}건을 찾았고, 이 페이지에 {shown}건을 표시합니다.",
     jpNoMatchTitle: "PMDA 제품명 매칭 없음",
     jpNoMatchDetail: "검색어: {query}. 일본어 제품명을 시도하거나 위 데이터 한계 카드의 PMDA 검색을 사용하세요.",
+    jpOfficialFieldTitle: "PMDA 공식 필드 검색",
+    jpOfficialFieldDetail: "PMDA 공식 포털은 {field} 검색을 지원하지만, 이 앱은 현재 제품명 자동완성 색인만 자동화합니다. 검색어: {query}.",
     packages: "패키지",
     regulatory: "허가/규제",
     label: "라벨",
@@ -256,9 +260,9 @@ const SOURCES = {
 SOURCES.jp = {
   label: "Japan PMDA",
   apiLabel: "PMDA OTC/BTC",
-  badge: "Product-name index",
-  note: "Japan PMDA general-use / guidance-required package-insert product-name index.",
-  placeholder: "Example: EVE, Bufferin, Loxonin, Allegra",
+  badge: "Product index + official fields",
+  note: "Official PMDA supports product, ingredient, company, and risk-category searches; this app currently automates the public product-name suggestion index.",
+  placeholder: "Example: EVE, Bufferin, Loxonin, Allegra, ibuprofen",
   empty: "No PMDA product-name rows for this search.",
   codeHeader: "PMDA",
   formHeader: "Index",
@@ -267,8 +271,9 @@ SOURCES.jp = {
   manualUrl: "https://www.pmda.go.jp/PmdaSearch/otcSearch/",
   manualLabel: "Open PMDA OTC search",
   warnings: [
-    "This tab searches PMDA's official product-name index only, with a few English brand aliases.",
-    "Company searches such as Haleon and non-indexed brand names such as Advil may return no rows; verify ingredient, company, risk category, and package insert on PMDA."
+    "PMDA's official portal has product-name, ingredient, company, risk-category, and package-insert search fields.",
+    "This app automates only PMDA's public product-name suggestion index for now; ingredient/company selections route to manual PMDA verification.",
+    "English/Romanized terms use a small alias dictionary, so Japanese product names remain the most reliable queries."
   ]
 };
 
@@ -340,8 +345,9 @@ const SOURCE_I18N = {
   },
   jp: {
     label: { en: "Japan PMDA", ko: "일본 PMDA" },
-    note: { en: "Japan PMDA general-use / guidance-required package-insert product-name index.", ko: "일본 PMDA 일반용/요지도 의약품 첨부문서 제품명 색인입니다." },
-    placeholder: { en: "Example: EVE, Bufferin, Loxonin, Allegra", ko: "예: EVE, Bufferin, Loxonin, Allegra" },
+    badge: { en: "Product index + official fields", ko: "제품명 색인 + 공식 필드" },
+    note: { en: "Official PMDA supports product, ingredient, company, and risk-category searches; this app currently automates the public product-name suggestion index.", ko: "PMDA 공식 포털은 제품명, 성분명, 회사명, 리스크 구분 검색을 지원하지만, 이 앱은 현재 공개 제품명 자동완성 색인을 자동화합니다." },
+    placeholder: { en: "Example: EVE, Bufferin, Loxonin, Allegra, ibuprofen", ko: "예: EVE, Bufferin, Loxonin, Allegra, ibuprofen" },
     empty: { en: "No PMDA product-name rows for this search.", ko: "이 검색어와 일치하는 PMDA 제품명 색인 결과가 없습니다." },
     formHeader: { en: "Index", ko: "색인" },
     dateSortLabel: { en: "Loaded", ko: "불러온 날짜" },
@@ -349,8 +355,9 @@ const SOURCE_I18N = {
     warnings: {
       en: SOURCES.jp.warnings,
       ko: [
-        "이 탭은 PMDA 공식 제품명 색인만 검색하며, 일부 영문 브랜드 alias만 보정합니다.",
-        "Haleon 같은 회사명 검색이나 Advil처럼 색인에 없는 브랜드명은 0건일 수 있습니다. 성분, 회사, 리스크 구분, 첨부문서는 PMDA에서 확인하세요."
+        "PMDA 공식 포털에는 제품명, 성분명, 회사명, 리스크 구분, 첨부문서 검색 필드가 있습니다.",
+        "이 앱은 현재 PMDA의 공개 제품명 자동완성 색인만 자동화합니다. 성분명/회사명 선택 시 PMDA 수동 확인 안내로 연결됩니다.",
+        "영문/로마자 검색어는 작은 alias 사전으로 보정하므로, 일본어 제품명이 가장 안정적인 검색어입니다."
       ]
     }
   },
@@ -381,6 +388,7 @@ const state = {
   rows: [],
   rawItems: [],
   lastSearchUrl: "",
+  manualNotice: null,
   labelCache: new Map()
 };
 
@@ -918,6 +926,21 @@ function renderManualSource(config) {
   `;
 }
 
+function renderManualNotice(notice) {
+  els.resultCount.textContent = t("manualShort");
+  els.tableScroll.hidden = true;
+  els.manualResult.hidden = false;
+  els.manualResult.innerHTML = `
+    <div class="manual-card">
+      <div>
+        <strong>${escapeHtml(notice.title || t("manualRequired"))}</strong>
+        <p>${escapeHtml(notice.detail || "")}</p>
+      </div>
+      ${notice.url ? `<a class="inline-link" href="${escapeHtml(notice.url)}" target="_blank" rel="noreferrer">${escapeHtml(notice.linkLabel || t("manualRequired"))}</a>` : ""}
+    </div>
+  `;
+}
+
 function currentRows() {
   const strict = els.strictMode.checked;
   let rows = sortRows(state.rows);
@@ -927,6 +950,11 @@ function currentRows() {
 
 function renderRows() {
   const config = SOURCES[state.source];
+  if (state.manualNotice) {
+    renderManualNotice(state.manualNotice);
+    return;
+  }
+
   if (config.manualOnly) {
     renderManualSource(config);
     return;
@@ -985,7 +1013,7 @@ function renderRows() {
 }
 
 function renderPager() {
-  if (SOURCES[state.source].manualOnly) {
+  if (state.manualNotice || SOURCES[state.source].manualOnly) {
     els.pageLabel.textContent = t("manualShort");
     els.prevPage.disabled = true;
     els.nextPage.disabled = true;
@@ -1125,7 +1153,33 @@ async function runJpSearch(query, page) {
   state.total = total;
   state.rawItems = items;
   state.rows = items.map(mapJpItem);
+  state.manualNotice = null;
   if (data.meta?.loadedAt) els.apiDate.textContent = `${t("loaded")} ${data.meta.loadedAt.slice(0, 10)}`;
+
+  if (data.meta?.accessMode === "manual-field") {
+    const fieldKey = data.meta.field || els.searchMode.value;
+    const field = fieldKey === "ingredient"
+      ? t("ingredient")
+      : fieldKey === "company"
+        ? t("company")
+        : t("ndcCode");
+    const detail = t("jpOfficialFieldDetail", {
+      field,
+      query
+    });
+    const safeDetail = t("jpOfficialFieldDetail", {
+      field: escapeHtml(field),
+      query: escapeHtml(query)
+    });
+    state.manualNotice = {
+      title: t("jpOfficialFieldTitle"),
+      detail,
+      url: SOURCES.jp.manualUrl,
+      linkLabel: SOURCES.jp.manualLabel
+    };
+    setStatus(t("jpOfficialFieldTitle"), safeDetail);
+    return;
+  }
 
   if (total) {
     setStatus(
@@ -1148,6 +1202,7 @@ async function runSearch({ page = 1, broad = false } = {}) {
     state.total = 0;
     state.rows = [];
     state.rawItems = [];
+    state.manualNotice = null;
     setStatus(t("defaultStatusTitle"), t("defaultStatusDetail"));
     els.resultCount.textContent = numberText(0);
     renderPager();
@@ -1159,6 +1214,7 @@ async function runSearch({ page = 1, broad = false } = {}) {
 
   state.query = query;
   state.page = page;
+  state.manualNotice = null;
   syncUrlQuery(query);
   showError("");
   setStatus(
@@ -1183,6 +1239,7 @@ async function runSearch({ page = 1, broad = false } = {}) {
   } catch (error) {
     state.total = 0;
     state.rows = [];
+    state.manualNotice = null;
     setStatus(t("searchFailedTitle"), t("searchFailedDetail"));
     showError(error.message);
     renderPager();
@@ -1272,11 +1329,11 @@ function makeRegulatoryMarkup(row) {
       </div>
       <div class="detail-block">
         <strong>Structured fields</strong>
-        <div>Product name index only in this app.</div>
+        <div>This app automates PMDA's product-name suggestion index only.</div>
       </div>
       <div class="detail-block">
         <strong>Required verification</strong>
-        <div>Confirm risk category, ingredient, company, and package insert on PMDA.</div>
+        <div>Use the official PMDA portal for ingredient, company, risk category, and package-insert searches.</div>
       </div>
       <a class="source-link" href="${escapeHtml(row.medicineUrl)}" target="_blank" rel="noreferrer">PMDA OTC search</a>
     `;
@@ -1478,7 +1535,7 @@ function makeJpContextMarkup(row) {
     </div>
     <div class="detail-block">
       <strong>Note</strong>
-      <div>PMDA's product-name index confirms the name is in the OTC/guidance-required search surface, but this app does not yet extract the detailed package insert fields.</div>
+      <div>PMDA's product-name index confirms the name is in the OTC/guidance-required search surface. Ingredient, company, risk category, and package-insert fields should still be verified in the official PMDA portal.</div>
     </div>
   `;
 }
@@ -1617,6 +1674,7 @@ function applySource(source, { run = false } = {}) {
   state.total = 0;
   state.rows = [];
   state.rawItems = [];
+  state.manualNotice = null;
   showError("");
   setStatus(t("defaultStatusTitle"), config.note);
   renderPager();

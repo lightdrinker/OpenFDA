@@ -222,9 +222,9 @@ const SOURCES = {
     label: "Germany AMIce",
     apiLabel: "BfArM AMIce",
     badge: "Manual portal",
-    note: "Germany national register is BfArM AMIce Public Part.",
+    note: "Germany AMIce must be checked in the official BfArM portal from this app.",
     placeholder: "Example: ibuprofen, aspirin, nurofen, Zul.-Nr.",
-    empty: "No automated Germany rows are available from this app.",
+    empty: "Use the official AMIce portal for Germany product, ingredient, company, authorisation number, and register checks.",
     codeHeader: "Zul.-Nr.",
     formHeader: "Register",
     dateSortLabel: "Updated",
@@ -232,9 +232,10 @@ const SOURCES = {
     manualUrl: "https://portal.dimdi.de/amguifree/?accessid=amis_off_am_ppv&lang=de",
     manualLabel: "Open AMIce Public Part",
     manualOnly: true,
+    searchDisabled: true,
     warnings: [
-      "Automated AMIce JSON/API search is not available here.",
-      "Company/brand checks such as Haleon or Advil must be verified manually in the linked AMIce portal."
+      "The search box is hidden for Germany to avoid false no-result interpretation.",
+      "AMIce is the official manual verification route for product, active substance, company, and authorisation checks."
     ]
   },
   jp: {
@@ -260,20 +261,22 @@ const SOURCES = {
 SOURCES.jp = {
   label: "Japan PMDA",
   apiLabel: "PMDA OTC/BTC",
-  badge: "Product index + official fields",
-  note: "Official PMDA supports product, ingredient, company, and risk-category searches; this app currently automates the public product-name suggestion index.",
+  badge: "Manual PMDA portal",
+  note: "Japan PMDA should be checked in the official portal from this app.",
   placeholder: "Example: EVE, Bufferin, Loxonin, Allegra, ibuprofen",
-  empty: "No PMDA product-name rows for this search.",
+  empty: "Use the official PMDA portal for Japan product, ingredient, company, risk-category, and package-insert checks.",
   codeHeader: "PMDA",
   formHeader: "Index",
   dateSortLabel: "Loaded",
   detailButton: "PMDA",
   manualUrl: "https://www.pmda.go.jp/PmdaSearch/otcSearch/",
   manualLabel: "Open PMDA OTC search",
+  manualOnly: true,
+  searchDisabled: true,
   warnings: [
+    "The search box is hidden for Japan to avoid false no-result interpretation.",
     "PMDA's official portal has product-name, ingredient, company, risk-category, and package-insert search fields.",
-    "This app automates only PMDA's public product-name suggestion index for now; ingredient/company selections route to manual PMDA verification.",
-    "English/Romanized terms use a small alias dictionary, so Japanese product names remain the most reliable queries."
+    "Japanese terms are still the most reliable inside PMDA; use English/Romanized terms only as hints."
   ]
 };
 
@@ -328,9 +331,9 @@ const SOURCE_I18N = {
   },
   de: {
     label: { en: "Germany AMIce", ko: "독일 AMIce" },
-    note: { en: "Germany national register is BfArM AMIce Public Part.", ko: "독일 국가 등록은 BfArM AMIce Public Part에서 확인합니다." },
+    note: { en: "Germany AMIce must be checked in the official BfArM portal from this app.", ko: "독일 AMIce는 이 앱에서 공식 BfArM 포털로 확인합니다." },
     placeholder: { en: "Example: ibuprofen, aspirin, nurofen, Zul.-Nr.", ko: "예: ibuprofen, aspirin, nurofen, Zul.-Nr." },
-    empty: { en: "No automated Germany rows are available from this app.", ko: "이 앱에서는 독일 AMIce 자동 결과를 제공하지 않습니다." },
+    empty: { en: "Use the official AMIce portal for Germany product, ingredient, company, authorisation number, and register checks.", ko: "독일 제품명, 성분명, 회사명, 허가번호, 등록 상태는 공식 AMIce 포털에서 확인하세요." },
     codeHeader: { en: "Zul.-Nr.", ko: "Zul.-Nr." },
     formHeader: { en: "Register", ko: "등록" },
     dateSortLabel: { en: "Updated", ko: "업데이트" },
@@ -338,26 +341,26 @@ const SOURCE_I18N = {
     warnings: {
       en: SOURCES.de.warnings,
       ko: [
-        "이 앱에서는 AMIce JSON/API 자동 검색을 사용할 수 없습니다.",
-        "Haleon 또는 Advil 같은 회사/브랜드 확인은 연결된 AMIce 포털에서 수동으로 확인하세요."
+        "독일은 잘못된 0건 해석을 막기 위해 검색창을 숨겼습니다.",
+        "제품명, 성분명, 회사명, 허가번호 확인은 공식 AMIce 포털에서 수동으로 확인하세요."
       ]
     }
   },
   jp: {
     label: { en: "Japan PMDA", ko: "일본 PMDA" },
-    badge: { en: "Product index + official fields", ko: "제품명 색인 + 공식 필드" },
-    note: { en: "Official PMDA supports product, ingredient, company, and risk-category searches; this app currently automates the public product-name suggestion index.", ko: "PMDA 공식 포털은 제품명, 성분명, 회사명, 리스크 구분 검색을 지원하지만, 이 앱은 현재 공개 제품명 자동완성 색인을 자동화합니다." },
+    badge: { en: "Manual PMDA portal", ko: "PMDA 수동 포털" },
+    note: { en: "Japan PMDA should be checked in the official portal from this app.", ko: "일본 PMDA는 이 앱에서 공식 포털로 확인합니다." },
     placeholder: { en: "Example: EVE, Bufferin, Loxonin, Allegra, ibuprofen", ko: "예: EVE, Bufferin, Loxonin, Allegra, ibuprofen" },
-    empty: { en: "No PMDA product-name rows for this search.", ko: "이 검색어와 일치하는 PMDA 제품명 색인 결과가 없습니다." },
+    empty: { en: "Use the official PMDA portal for Japan product, ingredient, company, risk-category, and package-insert checks.", ko: "일본 제품명, 성분명, 회사명, 리스크 구분, 첨부문서는 공식 PMDA 포털에서 확인하세요." },
     formHeader: { en: "Index", ko: "색인" },
     dateSortLabel: { en: "Loaded", ko: "불러온 날짜" },
     manualLabel: { en: "Open PMDA OTC search", ko: "PMDA OTC 검색 열기" },
     warnings: {
       en: SOURCES.jp.warnings,
       ko: [
+        "일본은 잘못된 0건 해석을 막기 위해 검색창을 숨겼습니다.",
         "PMDA 공식 포털에는 제품명, 성분명, 회사명, 리스크 구분, 첨부문서 검색 필드가 있습니다.",
-        "이 앱은 현재 PMDA의 공개 제품명 자동완성 색인만 자동화합니다. 성분명/회사명 선택 시 PMDA 수동 확인 안내로 연결됩니다.",
-        "영문/로마자 검색어는 작은 alias 사전으로 보정하므로, 일본어 제품명이 가장 안정적인 검색어입니다."
+        "PMDA 안에서는 일본어 검색어가 가장 안정적이며, 영문/로마자 표기는 참고 힌트로만 사용하세요."
       ]
     }
   },
@@ -395,6 +398,7 @@ const state = {
 const els = {
   form: document.getElementById("searchForm"),
   keyword: document.getElementById("keyword"),
+  controlGrid: document.querySelector(".control-grid"),
   languageButtons: document.querySelectorAll("[data-lang]"),
   sourceTabs: document.querySelectorAll("[data-source]"),
   sourceNote: document.getElementById("sourceNote"),
@@ -1195,6 +1199,22 @@ async function runJpSearch(query, page) {
 }
 
 async function runSearch({ page = 1, broad = false } = {}) {
+  const config = SOURCES[state.source];
+  if (config.searchDisabled) {
+    state.query = "";
+    state.page = 1;
+    state.total = 0;
+    state.rows = [];
+    state.rawItems = [];
+    state.manualNotice = null;
+    setStatus(t("manualRequired"), config.note);
+    els.resultCount.textContent = t("manualShort");
+    renderPager();
+    renderManualSource(config);
+    syncUrlQuery("");
+    return;
+  }
+
   const query = els.keyword.value.trim();
   if (!query) {
     state.query = "";
@@ -1206,7 +1226,7 @@ async function runSearch({ page = 1, broad = false } = {}) {
     setStatus(t("defaultStatusTitle"), t("defaultStatusDetail"));
     els.resultCount.textContent = numberText(0);
     renderPager();
-    if (SOURCES[state.source].manualOnly) renderManualSource(SOURCES[state.source]);
+    if (config.manualOnly) renderManualSource(config);
     else renderEmpty(t("resultsPlaceholder"));
     syncUrlQuery("");
     return;
@@ -1650,6 +1670,7 @@ async function toggleDetail(button) {
 function applySource(source, { run = false } = {}) {
   state.source = SOURCES[source] ? source : "us";
   const config = SOURCES[state.source];
+  const searchDisabled = Boolean(config.searchDisabled);
 
   els.sourceTabs.forEach((tab) => {
     const active = tab.dataset.source === state.source;
@@ -1666,8 +1687,15 @@ function applySource(source, { run = false } = {}) {
   els.keyword.placeholder = config.placeholder;
   els.codeHeader.textContent = config.codeHeader;
   els.formHeader.textContent = config.formHeader;
+  els.form.classList.toggle("is-hidden", searchDisabled);
+  els.controlGrid.classList.toggle("is-hidden", searchDisabled);
+  els.keyword.disabled = searchDisabled;
+  els.searchMode.disabled = searchDisabled;
+  els.resultLimit.disabled = searchDisabled;
+  els.sortMode.disabled = searchDisabled;
+  els.strictMode.disabled = searchDisabled;
   els.categoryControl.classList.toggle("is-hidden", state.source !== "us");
-  els.categoryFilter.disabled = state.source !== "us";
+  els.categoryFilter.disabled = state.source !== "us" || searchDisabled;
   els.sortMode.querySelector('option[value="expiration"]').textContent = config.dateSortLabel;
 
   state.page = 1;
@@ -1680,9 +1708,9 @@ function applySource(source, { run = false } = {}) {
   renderPager();
   if (config.manualOnly) renderManualSource(config);
   else renderEmpty(t("resultsPlaceholder"));
-  syncUrlQuery(els.keyword.value.trim());
+  syncUrlQuery(searchDisabled ? "" : els.keyword.value.trim());
 
-  if (run && els.keyword.value.trim()) runSearch({ page: 1 });
+  if (!searchDisabled && run && els.keyword.value.trim()) runSearch({ page: 1 });
 }
 
 els.languageButtons.forEach((button) => {
@@ -1735,7 +1763,9 @@ applySourceTranslations();
 applyStaticLanguage();
 applySource(initialSource);
 
-if (initialQuery) {
+if (initialQuery && !SOURCES[state.source].searchDisabled) {
   els.keyword.value = initialQuery;
   runSearch({ page: 1 });
+} else if (initialQuery) {
+  syncUrlQuery("");
 }

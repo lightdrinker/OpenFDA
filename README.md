@@ -23,9 +23,9 @@ France search uses BDPM `CIS_bdpm`, `CIS_COMPO`, `CIS_CIP`, `CIS_CPD`, and `CIS_
 
 UK search uses the MHRA Products search index and returns medicine documents such as SmPC, PIL, and PAR records. It can search by product, active substance, or Product Licence number, but legal supply category is not returned as a structured field.
 
-Germany AMIce Public Part is the official public German register. Its public portal is linked in the app, but a stable server-readable JSON/API endpoint was not available during implementation, so Germany is currently a manual verification tab rather than an automated result table.
+Germany AMIce Public Part is the official public German register. Its public portal is linked in the app, but a stable server-readable JSON/API endpoint was not available during implementation, so Germany is currently a manual verification tab with the search controls hidden to avoid false no-result interpretation.
 
-Japan PMDA's official OTC/guidance-required portal supports product-name, ingredient, company, risk-category, and package-insert searches. This app currently automates PMDA's public product-name suggestion index only, with a small English-to-Japanese alias dictionary. Ingredient/company field selections in the app route users to manual PMDA verification instead of presenting product-name-index misses as authoritative no-results.
+Japan PMDA's official OTC/guidance-required portal supports product-name, ingredient, company, risk-category, and package-insert searches. Because the app can only access PMDA's public product-name suggestion index, the Japan tab now hides search controls and routes users to the official PMDA portal instead of presenting partial automated results as authoritative.
 
 ## Run Locally
 
@@ -45,7 +45,7 @@ URL search examples:
 http://127.0.0.1:8765/?q=advil
 http://127.0.0.1:8765/?source=uk&q=advil
 http://127.0.0.1:8765/?source=fr&q=advil
-http://127.0.0.1:8765/?source=de&q=ibuprofen
-http://127.0.0.1:8765/?source=jp&q=EVE
+http://127.0.0.1:8765/?source=de
+http://127.0.0.1:8765/?source=jp
 http://127.0.0.1:8765/?source=eu&q=emedastine
 ```

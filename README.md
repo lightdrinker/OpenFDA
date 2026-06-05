@@ -1,6 +1,6 @@
-# OpenFDA
+# OpenCPP
 
-OpenFDA is a small registry search app for CPP-country medicine checks.
+OpenCPP is a small registry search app for CPP-country medicine checks.
 
 ## Data Sources
 

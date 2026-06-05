@@ -11,7 +11,7 @@ const DEFAULT_LANG = "en";
 function initialLanguage() {
   const params = new URLSearchParams(window.location.search);
   const urlLang = params.get("lang");
-  const savedLang = window.localStorage.getItem("openfda-lang");
+  const savedLang = window.localStorage.getItem("opencpp-lang");
   const browserLang = navigator.language && navigator.language.toLowerCase().startsWith("ko") ? "ko" : DEFAULT_LANG;
   return SUPPORTED_LANGS.includes(urlLang)
     ? urlLang
@@ -510,7 +510,7 @@ function setLanguage(lang, { run = true } = {}) {
   if (!SUPPORTED_LANGS.includes(lang) || lang === state.lang) return;
 
   state.lang = lang;
-  window.localStorage.setItem("openfda-lang", state.lang);
+  window.localStorage.setItem("opencpp-lang", state.lang);
   applySourceTranslations();
   applyStaticLanguage();
   applySource(state.source, { run: run && Boolean(els.keyword.value.trim()) });
@@ -878,9 +878,9 @@ function renderEmpty(message) {
   `;
 }
 
-function sourceLink(config) {
+function sourceLink(config, className = "inline-link") {
   if (!config.manualUrl) return "";
-  return `<a class="inline-link" href="${escapeHtml(config.manualUrl)}" target="_blank" rel="noreferrer">${escapeHtml(config.manualLabel || "Open source")}</a>`;
+  return `<a class="${escapeHtml(className)}" href="${escapeHtml(config.manualUrl)}" target="_blank" rel="noreferrer">${escapeHtml(config.manualLabel || "Open source")}</a>`;
 }
 
 function renderWarnings() {
@@ -929,7 +929,7 @@ function renderManualSource(config) {
         <strong>${escapeHtml(t("manualRequired"))}</strong>
         <p>${escapeHtml(config.empty)}</p>
       </div>
-      ${sourceLink(config)}
+      ${sourceLink(config, "manual-link")}
     </div>
   `;
 }
@@ -945,7 +945,7 @@ function renderManualNotice(notice) {
         <strong>${escapeHtml(notice.title || t("manualRequired"))}</strong>
         <p>${escapeHtml(notice.detail || "")}</p>
       </div>
-      ${notice.url ? `<a class="inline-link" href="${escapeHtml(notice.url)}" target="_blank" rel="noreferrer">${escapeHtml(notice.linkLabel || t("manualRequired"))}</a>` : ""}
+      ${notice.url ? `<a class="manual-link" href="${escapeHtml(notice.url)}" target="_blank" rel="noreferrer">${escapeHtml(notice.linkLabel || t("manualRequired"))}</a>` : ""}
     </div>
   `;
 }

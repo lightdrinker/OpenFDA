@@ -19,15 +19,15 @@ const SOURCES = {
     dateSortLabel: "Listing expiration",
     detailButton: "Detail",
     warnings: [
-      "Filtered to openFDA NDC entries with product_type HUMAN OTC DRUG and finished:true.",
-      "NDC listing is strong registration evidence, but final CPP/legal review should still verify the official label, monograph/NDA/ANDA status, and current marketing status."
+      "Filtered to openFDA NDC entries with HUMAN OTC DRUG and finished:true.",
+      "Verify current label, monograph/NDA/ANDA status, and marketing status for final CPP review."
     ]
   },
   uk: {
     label: "UK MHRA",
     apiLabel: "MHRA Products",
     badge: "Medicine documents",
-    note: "United Kingdom MHRA Products search for medicine documents by product, active substance, or Product Licence number. Legal supply category is not returned as a structured field.",
+    note: "United Kingdom MHRA Products document search by product, active substance, or Product Licence number.",
     placeholder: "Example: advil, nurofen, ibuprofen, PL 00327/0197",
     empty: "No matching UK MHRA medicine documents.",
     codeHeader: "PL No.",
@@ -35,15 +35,15 @@ const SOURCES = {
     dateSortLabel: "Document date",
     detailButton: "MHRA",
     warnings: [
-      "MHRA Products results are document-centric (SmPC/PIL/PAR), not a clean product master table.",
-      "P/GSL/POM legal supply category is not exposed as a structured field here; verify it in the linked SmPC/PIL or official UK source."
+      "Results are document-centric (SmPC/PIL/PAR), not a clean product master table.",
+      "P/GSL/POM legal supply category is not exposed here; verify it in the linked SmPC/PIL."
     ]
   },
   eu: {
     label: "EMA Centralized",
     apiLabel: "EMA medicines JSON",
     badge: "Centralised procedure",
-    note: "EU centralized medicines from EMA. EMA data does not directly mark OTC status, so use this as an authorization signal.",
+    note: "EU centralized medicines from EMA.",
     placeholder: "Example: paracetamol, ibuprofen, emedastine, EMEA/H/C/000223",
     empty: "No matching EU centralized medicines.",
     codeHeader: "EMA No.",
@@ -51,15 +51,15 @@ const SOURCES = {
     dateSortLabel: "Last updated",
     detailButton: "EMA",
     warnings: [
-      "EMA data covers centralised-procedure medicines only, not all EU national OTC products.",
-      "EMA dataset does not directly mark OTC/legal supply status; use it as authorization evidence and verify national status separately."
+      "Covers centralised-procedure medicines only, not all EU national OTC products.",
+      "OTC/legal supply status is not marked directly; verify national status separately."
     ]
   },
   fr: {
     label: "France BDPM",
     apiLabel: "France BDPM",
     badge: "National register",
-    note: "France national medicines register from BDPM. CPD restrictions are shown when listed; OTC status should still be verified.",
+    note: "France national medicines register from BDPM.",
     placeholder: "Example: advil, nurofen, doliprane, ibuprofene, 68634000",
     empty: "No matching France BDPM medicines.",
     codeHeader: "CIS / CIP",
@@ -67,26 +67,27 @@ const SOURCES = {
     dateSortLabel: "AMM date",
     detailButton: "BDPM",
     warnings: [
-      "BDPM is a national register and shows CPD restrictions when listed.",
-      "No CPD restriction listed is useful but does not automatically prove OTC status; verify the official BDPM page for final legal supply status."
+      "CPD restrictions are shown when listed.",
+      "No CPD restriction listed is useful but does not automatically prove OTC status."
     ]
   },
   de: {
     label: "Germany AMIce",
     apiLabel: "BfArM AMIce",
     badge: "Manual portal",
-    note: "Germany national register is BfArM AMIce Public Part. The official portal is public, but a stable server-readable JSON/API search endpoint is not exposed.",
+    note: "Germany national register is BfArM AMIce Public Part.",
     placeholder: "Example: ibuprofen, aspirin, nurofen, Zul.-Nr.",
-    empty: "Germany AMIce cannot be queried directly from this app yet. Use the official AMIce Public Part portal for final verification.",
+    empty: "No automated Germany rows are available from this app.",
     codeHeader: "Zul.-Nr.",
     formHeader: "Register",
     dateSortLabel: "Updated",
     detailButton: "AMIce",
     manualUrl: "https://portal.dimdi.de/amguifree/?accessid=amis_off_am_ppv&lang=de",
     manualLabel: "Open AMIce Public Part",
+    manualOnly: true,
     warnings: [
-      "BfArM AMIce Public Part is the official German register, but this app has no stable server-readable JSON/API endpoint for automated results.",
-      "Use the linked AMIce portal manually for Germany verification."
+      "Automated AMIce JSON/API search is not available here.",
+      "Company/brand checks such as Haleon or Advil must be verified manually in the linked AMIce portal."
     ]
   },
   jp: {
@@ -107,6 +108,25 @@ const SOURCES = {
       "Ingredient, company, risk category (要指導/第1類/第2類/第3類), and package insert details must be verified on the PMDA search page."
     ]
   }
+};
+
+SOURCES.jp = {
+  label: "Japan PMDA",
+  apiLabel: "PMDA OTC/BTC",
+  badge: "Product-name index",
+  note: "Japan PMDA general-use / guidance-required package-insert product-name index.",
+  placeholder: "Example: EVE, Bufferin, Loxonin, Allegra",
+  empty: "No PMDA product-name rows for this search.",
+  codeHeader: "PMDA",
+  formHeader: "Index",
+  dateSortLabel: "Loaded",
+  detailButton: "PMDA",
+  manualUrl: "https://www.pmda.go.jp/PmdaSearch/otcSearch/",
+  manualLabel: "Open PMDA OTC search",
+  warnings: [
+    "This tab searches PMDA's official product-name index only, with a few English brand aliases.",
+    "Company searches such as Haleon and non-indexed brand names such as Advil may return no rows; verify ingredient, company, risk category, and package insert on PMDA."
+  ]
 };
 
 const state = {
@@ -137,6 +157,8 @@ const els = {
   statusDetail: document.getElementById("statusDetail"),
   resultCount: document.getElementById("resultCount"),
   resultsBody: document.getElementById("resultsBody"),
+  tableScroll: document.getElementById("tableScroll"),
+  manualResult: document.getElementById("manualResult"),
   prevPage: document.getElementById("prevPage"),
   nextPage: document.getElementById("nextPage"),
   pageLabel: document.getElementById("pageLabel"),
@@ -498,6 +520,8 @@ function syncUrlQuery(query) {
 }
 
 function renderEmpty(message) {
+  els.tableScroll.hidden = false;
+  els.manualResult.hidden = true;
   els.resultsBody.innerHTML = `
     <tr>
       <td colspan="7" class="empty-state">${escapeHtml(message)}</td>
@@ -519,21 +543,43 @@ function renderWarnings() {
   }
 
   els.sourceWarnings.hidden = false;
-  els.sourceWarnings.innerHTML = warnings
-    .map((warning) => `<div class="warning-item">${escapeHtml(warning)}</div>`)
-    .join("");
+  const link = sourceLink(SOURCES[state.source]);
+  els.sourceWarnings.innerHTML = `
+    <div class="source-limit-card">
+      <div class="source-limit-title">Source limits</div>
+      <div class="source-limit-body">
+        ${warnings.map((warning) => `<span>${escapeHtml(warning)}</span>`).join("")}
+        ${link ? `<span>${link}</span>` : ""}
+      </div>
+    </div>
+  `;
 }
 
 function renderSourceEmpty() {
   const config = SOURCES[state.source];
-  const link = sourceLink(config);
+  els.tableScroll.hidden = false;
+  els.manualResult.hidden = true;
   els.resultsBody.innerHTML = `
     <tr>
       <td colspan="7" class="empty-state">
         ${escapeHtml(config.empty)}
-        ${link ? `<div class="empty-action">${link}</div>` : ""}
       </td>
     </tr>
+  `;
+}
+
+function renderManualSource(config) {
+  els.resultCount.textContent = "Manual";
+  els.tableScroll.hidden = true;
+  els.manualResult.hidden = false;
+  els.manualResult.innerHTML = `
+    <div class="manual-card">
+      <div>
+        <strong>Manual verification required</strong>
+        <p>${escapeHtml(config.empty)}</p>
+      </div>
+      ${sourceLink(config)}
+    </div>
   `;
 }
 
@@ -545,6 +591,14 @@ function currentRows() {
 }
 
 function renderRows() {
+  const config = SOURCES[state.source];
+  if (config.manualOnly) {
+    renderManualSource(config);
+    return;
+  }
+
+  els.tableScroll.hidden = false;
+  els.manualResult.hidden = true;
   const rows = currentRows();
   els.resultCount.textContent = rows.length.toLocaleString();
 
@@ -596,6 +650,13 @@ function renderRows() {
 }
 
 function renderPager() {
+  if (SOURCES[state.source].manualOnly) {
+    els.pageLabel.textContent = "Manual";
+    els.prevPage.disabled = true;
+    els.nextPage.disabled = true;
+    return;
+  }
+
   const limit = Number(els.resultLimit.value);
   const lastPage = Math.max(1, Math.ceil(state.total / limit));
   els.pageLabel.textContent = `${state.page} / ${lastPage}`;
@@ -714,8 +775,8 @@ async function runDeSearch(query, page) {
   els.apiDate.textContent = "BfArM AMIce";
 
   setStatus(
-    `Search: ${escapeHtml(query)}`,
-    `${escapeHtml(data.meta?.notice || SOURCES.de.empty)} ${sourceLink(SOURCES.de)}`
+    "Manual verification source",
+    `Search term: ${escapeHtml(query)}. Use the AMIce portal linked in Source limits above.`
   );
 }
 
@@ -731,10 +792,17 @@ async function runJpSearch(query, page) {
   state.rows = items.map(mapJpItem);
   if (data.meta?.loadedAt) els.apiDate.textContent = `Loaded ${data.meta.loadedAt.slice(0, 10)}`;
 
-  setStatus(
-    `Search: ${escapeHtml(query)}`,
-    `PMDA index returned ${total.toLocaleString()} product-name matches; showing ${items.length.toLocaleString()} on this page. Verify risk category and details on PMDA.`
-  );
+  if (total) {
+    setStatus(
+      `Search: ${escapeHtml(query)}`,
+      `PMDA product-name index returned ${total.toLocaleString()} matches; showing ${items.length.toLocaleString()} on this page.`
+    );
+  } else {
+    setStatus(
+      "No PMDA product-name match",
+      `Search term: ${escapeHtml(query)}. Try a Japanese product name or use PMDA search from Source limits.`
+    );
+  }
 }
 
 async function runSearch({ page = 1, broad = false } = {}) {
@@ -1193,7 +1261,7 @@ function applySource(source, { run = false } = {}) {
     tab.setAttribute("aria-selected", active ? "true" : "false");
   });
 
-  els.sourceNote.innerHTML = `${escapeHtml(config.note)} ${sourceLink(config)}`;
+  els.sourceNote.textContent = config.note;
   renderWarnings();
   els.sourceBadge.textContent = config.badge;
   els.apiDate.textContent = config.apiLabel;
@@ -1211,7 +1279,8 @@ function applySource(source, { run = false } = {}) {
   showError("");
   setStatus("Enter a search term.", config.note);
   renderPager();
-  renderEmpty("Search results will appear here.");
+  if (config.manualOnly) renderManualSource(config);
+  else renderEmpty("Search results will appear here.");
   syncUrlQuery(els.keyword.value.trim());
 
   if (run && els.keyword.value.trim()) runSearch({ page: 1 });

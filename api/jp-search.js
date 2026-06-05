@@ -1,6 +1,16 @@
 const PMDA_OTC_INDEX_URL = "https://www.pmda.go.jp/PmdaSearch/js/data/otc/list_n.lib";
 const PMDA_OTC_SEARCH_URL = "https://www.pmda.go.jp/PmdaSearch/otcSearch/";
 const CACHE_MS = 6 * 60 * 60 * 1000;
+const QUERY_ALIAS_OVERRIDES = {
+  eve: ["\u30a4\u30d6"],
+  bufferin: ["\u30d0\u30d5\u30a1\u30ea\u30f3"],
+  loxonin: ["\u30ed\u30ad\u30bd\u30cb\u30f3"],
+  allegra: ["\u30a2\u30ec\u30b0\u30e9"],
+  tylenol: ["\u30bf\u30a4\u30ec\u30ce\u30fc\u30eb"],
+  aspirin: ["\u30a2\u30b9\u30d4\u30ea\u30f3"],
+  pabron: ["\u30d1\u30d6\u30ed\u30f3"],
+  advil: ["\u30a2\u30c9\u30d3\u30eb"]
+};
 const QUERY_ALIASES = {
   eve: ["イブ"],
   bufferin: ["バファリン"],
@@ -72,7 +82,7 @@ async function loadIndex() {
 function queryVariants(queryText) {
   const variants = [queryText];
   const aliasKey = compact(queryText);
-  (QUERY_ALIASES[aliasKey] || []).forEach((alias) => variants.push(alias));
+  (QUERY_ALIAS_OVERRIDES[aliasKey] || QUERY_ALIASES[aliasKey] || []).forEach((alias) => variants.push(alias));
   return variants.map((variant) => ({
     raw: variant,
     normalized: normalize(variant),

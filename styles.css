@@ -1,18 +1,18 @@
 :root {
   color-scheme: light;
-  --bg: #f6f7f4;
+  --bg: #f3f6f7;
   --surface: #ffffff;
-  --surface-soft: #eef2ef;
-  --line: #d6ddd8;
-  --line-strong: #b7c2bb;
+  --surface-soft: #edf4f2;
+  --line: #d7e0df;
+  --line-strong: #aebfbd;
   --ink: #17201b;
-  --muted: #66736c;
-  --accent: #166a5b;
-  --accent-strong: #0d493f;
-  --amber: #a76500;
+  --muted: #5d6f6b;
+  --accent: #0f766e;
+  --accent-strong: #134e4a;
+  --amber: #b7791f;
   --red: #b3261e;
-  --blue: #225ea8;
-  --shadow: 0 12px 30px rgba(32, 42, 35, 0.08);
+  --blue: #1d4ed8;
+  --shadow: 0 16px 42px rgba(23, 32, 27, 0.09);
 }
 
 * {
@@ -22,7 +22,8 @@
 body {
   margin: 0;
   min-width: 320px;
-  background: var(--bg);
+  background:
+    linear-gradient(180deg, #e8f0ed 0, #f7f9f8 230px, var(--bg) 231px);
   color: var(--ink);
   font-family: Arial, "Noto Sans KR", sans-serif;
 }
@@ -74,14 +75,15 @@ label {
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  padding: 24px clamp(16px, 4vw, 44px);
-  border-bottom: 1px solid var(--line);
-  background: #fbfcfa;
+  padding: 26px clamp(18px, 4vw, 48px) 28px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: #123330;
+  color: #f8fffc;
 }
 
 .eyebrow {
   margin: 0 0 4px;
-  color: var(--accent);
+  color: #7dd3c7;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0;
@@ -105,16 +107,17 @@ h1 {
 }
 
 .header-meta span {
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e8fffb;
   padding: 6px 10px;
 }
 
 .app-shell {
   width: min(1440px, 100%);
   margin: 0 auto;
-  padding: 18px clamp(12px, 3vw, 32px) 40px;
+  padding: 22px clamp(12px, 3vw, 32px) 40px;
 }
 
 .search-panel,
@@ -123,29 +126,32 @@ h1 {
 .error-box {
   background: var(--surface);
   border: 1px solid var(--line);
+  border-radius: 8px;
   box-shadow: var(--shadow);
 }
 
 .search-panel {
-  padding: 16px;
+  padding: 18px 20px 20px;
 }
 
 .source-tabs {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   padding: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface-soft);
+  width: fit-content;
 }
 
 .source-tab {
-  min-height: 34px;
+  min-height: 36px;
   border-color: transparent;
   background: transparent;
   color: var(--muted);
+  font-weight: 700;
 }
 
 .source-tab.active {
@@ -155,25 +161,44 @@ h1 {
 }
 
 .source-note {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.4;
 }
 
 .source-warnings {
-  display: grid;
-  gap: 6px;
   margin-bottom: 12px;
 }
 
-.warning-item {
-  border-left: 3px solid var(--amber);
-  background: #fff8ea;
-  color: #5f4500;
-  padding: 8px 10px;
+.source-limit-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  border: 1px solid #eed8a7;
+  border-left: 4px solid var(--amber);
+  border-radius: 6px;
+  background: #fff9ed;
+  padding: 10px 12px;
   font-size: 12px;
   line-height: 1.4;
+}
+
+.source-limit-title {
+  color: #7a5200;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.source-limit-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: #624400;
+}
+
+.source-limit-body span:not(:last-child)::after {
+  content: "";
 }
 
 .is-hidden {
@@ -234,7 +259,8 @@ h1 {
   justify-content: space-between;
   gap: 14px;
   margin-top: 12px;
-  padding: 12px 14px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--accent);
 }
 
 #statusTitle {
@@ -257,6 +283,7 @@ h1 {
 
 .results-shell {
   margin-top: 12px;
+  overflow: hidden;
 }
 
 .app-footer {
@@ -313,6 +340,31 @@ h1 {
 
 .table-scroll {
   overflow-x: auto;
+}
+
+.manual-result {
+  padding: 18px;
+}
+
+.manual-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfc;
+  padding: 16px 18px;
+}
+
+.manual-card strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.manual-card p {
+  margin: 0;
+  color: var(--muted);
 }
 
 table {

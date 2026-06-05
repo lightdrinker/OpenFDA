@@ -5,6 +5,149 @@ const EU_ENDPOINT = "/api/eu-search";
 const UK_ENDPOINT = "/api/uk-search";
 const DE_ENDPOINT = "/api/de-search";
 const JP_ENDPOINT = "/api/jp-search";
+const SUPPORTED_LANGS = ["en", "ko"];
+const DEFAULT_LANG = "en";
+
+function initialLanguage() {
+  const params = new URLSearchParams(window.location.search);
+  const urlLang = params.get("lang");
+  const savedLang = window.localStorage.getItem("openfda-lang");
+  const browserLang = navigator.language && navigator.language.toLowerCase().startsWith("ko") ? "ko" : DEFAULT_LANG;
+  return SUPPORTED_LANGS.includes(urlLang)
+    ? urlLang
+    : SUPPORTED_LANGS.includes(savedLang)
+      ? savedLang
+      : browserLang;
+}
+
+const UI_TEXT = {
+  en: {
+    eyebrow: "CPP country medicine registry search",
+    search: "Search",
+    searchField: "Search field",
+    smart: "Smart",
+    brandProduct: "Brand / product",
+    ingredient: "Ingredient",
+    ndcCode: "NDC / EMA No.",
+    company: "Company",
+    marketingCategory: "Marketing category",
+    all: "All",
+    limit: "Limit",
+    sort: "Sort",
+    relevance: "Relevance",
+    productName: "Product name",
+    date: "Date",
+    hideWeak: "Hide weak matches",
+    results: "results",
+    previous: "Previous",
+    next: "Next",
+    score: "Score",
+    product: "Product",
+    detail: "Detail",
+    sourceLimits: "Source limits",
+    manualRequired: "Manual verification required",
+    manualShort: "Manual",
+    defaultStatusTitle: "Enter a search term.",
+    defaultStatusDetail: "Choose a country/source, then search by product, ingredient, code, or company.",
+    resultsPlaceholder: "Search results will appear here.",
+    searchTerm: "Search: {query}",
+    searching: "Searching: {query}",
+    searchingShort: "Searching...",
+    sourceLoading: "{source} data is loading.",
+    searchFailedTitle: "Search failed",
+    searchFailedDetail: "Try a simpler query or wait a moment before searching again.",
+    dataCouldNotLoad: "{source} data could not be loaded.",
+    application: "Application",
+    usStatus: "openFDA returned {total} matches; showing {shown} on this page.",
+    euStatus: "EMA returned {total} authorised centralised matches; showing {shown} on this page.",
+    frStatus: "France BDPM returned {total} active commercialised matches; showing {shown} on this page.",
+    ukStatus: "MHRA returned {total} medicine document matches; showing {shown} on this page. Legal supply category is not structured in this result.",
+    deTitle: "Manual verification source",
+    deDetail: "Search term: {query}. Use the AMIce portal linked in Source limits above.",
+    jpStatus: "PMDA product-name index returned {total} matches; showing {shown} on this page.",
+    jpNoMatchTitle: "No PMDA product-name match",
+    jpNoMatchDetail: "Search term: {query}. Try a Japanese product name or use PMDA search from Source limits.",
+    packages: "Packages",
+    regulatory: "Regulatory",
+    label: "Label",
+    dataset: "Dataset",
+    indication: "Indication",
+    presentations: "Presentations",
+    supply: "Supply",
+    document: "Document",
+    context: "Context",
+    pmdaIndex: "PMDA Index",
+    verification: "Verification",
+    caveat: "Caveat",
+    more: "more",
+    updated: "Updated",
+    loaded: "Loaded",
+    builtBy: "Built by"
+  },
+  ko: {
+    eyebrow: "CPP 국가 의약품 등록 검색",
+    search: "검색",
+    searchField: "검색 필드",
+    smart: "스마트",
+    brandProduct: "브랜드 / 제품명",
+    ingredient: "성분명",
+    ndcCode: "NDC / EMA 번호",
+    company: "회사",
+    marketingCategory: "마케팅 카테고리",
+    all: "전체",
+    limit: "표시 개수",
+    sort: "정렬",
+    relevance: "관련도",
+    productName: "제품명",
+    date: "날짜",
+    hideWeak: "약한 매칭 숨기기",
+    results: "결과",
+    previous: "이전",
+    next: "다음",
+    score: "점수",
+    product: "제품",
+    detail: "상세",
+    sourceLimits: "데이터 한계",
+    manualRequired: "수동 확인 필요",
+    manualShort: "수동",
+    defaultStatusTitle: "검색어를 입력하세요.",
+    defaultStatusDetail: "국가/소스를 선택한 뒤 제품명, 성분명, 코드 또는 회사명으로 검색하세요.",
+    resultsPlaceholder: "검색 결과가 여기에 표시됩니다.",
+    searchTerm: "검색어: {query}",
+    searching: "검색 중: {query}",
+    searchingShort: "검색 중...",
+    sourceLoading: "{source} 데이터를 불러오는 중입니다.",
+    searchFailedTitle: "검색 실패",
+    searchFailedDetail: "검색어를 단순하게 바꾸거나 잠시 뒤 다시 시도하세요.",
+    dataCouldNotLoad: "{source} 데이터를 불러오지 못했습니다.",
+    application: "신청/허가번호",
+    usStatus: "openFDA에서 {total}건을 찾았고, 이 페이지에 {shown}건을 표시합니다.",
+    euStatus: "EMA 중앙허가 데이터에서 {total}건을 찾았고, 이 페이지에 {shown}건을 표시합니다.",
+    frStatus: "France BDPM에서 유효/판매 중인 {total}건을 찾았고, 이 페이지에 {shown}건을 표시합니다.",
+    ukStatus: "MHRA 문서 검색에서 {total}건을 찾았고, 이 페이지에 {shown}건을 표시합니다. 판매 구분은 구조화 필드로 제공되지 않습니다.",
+    deTitle: "수동 확인 소스",
+    deDetail: "검색어: {query}. 위 데이터 한계 카드의 AMIce 포털에서 직접 확인하세요.",
+    jpStatus: "PMDA 제품명 색인에서 {total}건을 찾았고, 이 페이지에 {shown}건을 표시합니다.",
+    jpNoMatchTitle: "PMDA 제품명 매칭 없음",
+    jpNoMatchDetail: "검색어: {query}. 일본어 제품명을 시도하거나 위 데이터 한계 카드의 PMDA 검색을 사용하세요.",
+    packages: "패키지",
+    regulatory: "허가/규제",
+    label: "라벨",
+    dataset: "데이터셋",
+    indication: "효능/용도",
+    presentations: "포장/프레젠테이션",
+    supply: "판매/공급",
+    document: "문서",
+    context: "맥락",
+    pmdaIndex: "PMDA 색인",
+    verification: "확인",
+    caveat: "주의",
+    more: "개 더 보기",
+    updated: "업데이트",
+    loaded: "불러온 날짜",
+    builtBy: "제작"
+  }
+};
 
 const SOURCES = {
   us: {
@@ -129,8 +272,109 @@ SOURCES.jp = {
   ]
 };
 
+const SOURCE_I18N = {
+  us: {
+    label: { en: "US OTC", ko: "미국 OTC" },
+    note: { en: "United States OTC products from openFDA NDC Directory.", ko: "미국 openFDA NDC Directory에 등록된 OTC 제품입니다." },
+    placeholder: { en: "Example: advil, aspirin, acetaminophen, 0573-0147", ko: "예: advil, aspirin, acetaminophen, 0573-0147" },
+    empty: { en: "No matching US OTC products.", ko: "일치하는 미국 OTC 제품이 없습니다." },
+    formHeader: { en: "Form", ko: "제형" },
+    dateSortLabel: { en: "Listing expiration", ko: "등재 만료일" },
+    detailButton: { en: "Detail", ko: "상세" },
+    warnings: {
+      en: SOURCES.us.warnings,
+      ko: [
+        "openFDA NDC에서 HUMAN OTC DRUG 및 finished:true인 항목만 검색합니다.",
+        "CPP 최종 검토는 최신 라벨, monograph/NDA/ANDA 상태, 판매 상태를 별도로 확인하세요."
+      ]
+    }
+  },
+  uk: {
+    label: { en: "UK MHRA", ko: "영국 MHRA" },
+    note: { en: "United Kingdom MHRA Products document search by product, active substance, or Product Licence number.", ko: "영국 MHRA Products 문서를 제품명, 성분명 또는 Product Licence 번호로 검색합니다." },
+    placeholder: { en: "Example: advil, nurofen, ibuprofen, PL 00327/0197", ko: "예: advil, nurofen, ibuprofen, PL 00327/0197" },
+    empty: { en: "No matching UK MHRA medicine documents.", ko: "일치하는 영국 MHRA 문서가 없습니다." },
+    codeHeader: { en: "PL No.", ko: "PL 번호" },
+    formHeader: { en: "Document", ko: "문서" },
+    dateSortLabel: { en: "Document date", ko: "문서 날짜" },
+    warnings: {
+      en: SOURCES.uk.warnings,
+      ko: [
+        "결과는 SmPC/PIL/PAR 중심의 문서 검색이며, 깔끔한 제품 마스터 테이블은 아닙니다.",
+        "P/GSL/POM 판매 구분은 구조화 필드로 제공되지 않으므로 연결된 SmPC/PIL에서 확인하세요."
+      ]
+    }
+  },
+  fr: {
+    label: { en: "France BDPM", ko: "프랑스 BDPM" },
+    note: { en: "France national medicines register from BDPM.", ko: "프랑스 BDPM 국가 의약품 등록 데이터입니다." },
+    placeholder: { en: "Example: advil, nurofen, doliprane, ibuprofene, 68634000", ko: "예: advil, nurofen, doliprane, ibuprofene, 68634000" },
+    empty: { en: "No matching France BDPM medicines.", ko: "일치하는 프랑스 BDPM 의약품이 없습니다." },
+    codeHeader: { en: "CIS / CIP", ko: "CIS / CIP" },
+    formHeader: { en: "Form", ko: "제형" },
+    dateSortLabel: { en: "AMM date", ko: "AMM 날짜" },
+    warnings: {
+      en: SOURCES.fr.warnings,
+      ko: [
+        "CPD 제한 조건이 등록된 경우 함께 표시합니다.",
+        "CPD 제한이 없다는 점은 참고 신호일 뿐, 자동으로 OTC임을 의미하지는 않습니다."
+      ]
+    }
+  },
+  de: {
+    label: { en: "Germany AMIce", ko: "독일 AMIce" },
+    note: { en: "Germany national register is BfArM AMIce Public Part.", ko: "독일 국가 등록은 BfArM AMIce Public Part에서 확인합니다." },
+    placeholder: { en: "Example: ibuprofen, aspirin, nurofen, Zul.-Nr.", ko: "예: ibuprofen, aspirin, nurofen, Zul.-Nr." },
+    empty: { en: "No automated Germany rows are available from this app.", ko: "이 앱에서는 독일 AMIce 자동 결과를 제공하지 않습니다." },
+    codeHeader: { en: "Zul.-Nr.", ko: "Zul.-Nr." },
+    formHeader: { en: "Register", ko: "등록" },
+    dateSortLabel: { en: "Updated", ko: "업데이트" },
+    manualLabel: { en: "Open AMIce Public Part", ko: "AMIce Public Part 열기" },
+    warnings: {
+      en: SOURCES.de.warnings,
+      ko: [
+        "이 앱에서는 AMIce JSON/API 자동 검색을 사용할 수 없습니다.",
+        "Haleon 또는 Advil 같은 회사/브랜드 확인은 연결된 AMIce 포털에서 수동으로 확인하세요."
+      ]
+    }
+  },
+  jp: {
+    label: { en: "Japan PMDA", ko: "일본 PMDA" },
+    note: { en: "Japan PMDA general-use / guidance-required package-insert product-name index.", ko: "일본 PMDA 일반용/요지도 의약품 첨부문서 제품명 색인입니다." },
+    placeholder: { en: "Example: EVE, Bufferin, Loxonin, Allegra", ko: "예: EVE, Bufferin, Loxonin, Allegra" },
+    empty: { en: "No PMDA product-name rows for this search.", ko: "이 검색어와 일치하는 PMDA 제품명 색인 결과가 없습니다." },
+    formHeader: { en: "Index", ko: "색인" },
+    dateSortLabel: { en: "Loaded", ko: "불러온 날짜" },
+    manualLabel: { en: "Open PMDA OTC search", ko: "PMDA OTC 검색 열기" },
+    warnings: {
+      en: SOURCES.jp.warnings,
+      ko: [
+        "이 탭은 PMDA 공식 제품명 색인만 검색하며, 일부 영문 브랜드 alias만 보정합니다.",
+        "Haleon 같은 회사명 검색이나 Advil처럼 색인에 없는 브랜드명은 0건일 수 있습니다. 성분, 회사, 리스크 구분, 첨부문서는 PMDA에서 확인하세요."
+      ]
+    }
+  },
+  eu: {
+    label: { en: "EMA Centralized", ko: "EMA 중앙허가" },
+    note: { en: "EU centralized medicines from EMA.", ko: "EMA 중앙허가 의약품 데이터입니다." },
+    placeholder: { en: "Example: paracetamol, ibuprofen, emedastine, EMEA/H/C/000223", ko: "예: paracetamol, ibuprofen, emedastine, EMEA/H/C/000223" },
+    empty: { en: "No matching EU centralized medicines.", ko: "일치하는 EMA 중앙허가 의약품이 없습니다." },
+    codeHeader: { en: "EMA No.", ko: "EMA 번호" },
+    formHeader: { en: "Group", ko: "그룹" },
+    dateSortLabel: { en: "Last updated", ko: "최근 업데이트" },
+    warnings: {
+      en: SOURCES.eu.warnings,
+      ko: [
+        "EMA 중앙허가 의약품만 포함하며, 모든 EU 국가별 OTC 제품을 포함하지는 않습니다.",
+        "OTC/판매 구분은 직접 표시되지 않으므로 국가별 등록 상태를 별도로 확인하세요."
+      ]
+    }
+  }
+};
+
 const state = {
   source: "us",
+  lang: initialLanguage(),
   query: "",
   page: 1,
   total: 0,
@@ -143,6 +387,7 @@ const state = {
 const els = {
   form: document.getElementById("searchForm"),
   keyword: document.getElementById("keyword"),
+  languageButtons: document.querySelectorAll("[data-lang]"),
   sourceTabs: document.querySelectorAll("[data-source]"),
   sourceNote: document.getElementById("sourceNote"),
   sourceWarnings: document.getElementById("sourceWarnings"),
@@ -168,6 +413,95 @@ const els = {
   formHeader: document.getElementById("formHeader"),
   detailTemplate: document.getElementById("detailTemplate")
 };
+
+function t(key, values = {}) {
+  const bundle = UI_TEXT[state.lang] || UI_TEXT.en;
+  const fallback = UI_TEXT.en[key] || key;
+  return (bundle[key] || fallback).replace(/\{(\w+)\}/g, (_, name) => values[name] ?? "");
+}
+
+function localized(value) {
+  if (Array.isArray(value)) return value.map((entry) => localized(entry));
+  if (value && typeof value === "object") return value[state.lang] || value.en || "";
+  return value;
+}
+
+function numberText(value) {
+  return Number(value || 0).toLocaleString(state.lang === "ko" ? "ko-KR" : "en-US");
+}
+
+function applySourceTranslations() {
+  Object.entries(SOURCE_I18N).forEach(([sourceKey, copy]) => {
+    const source = SOURCES[sourceKey];
+    if (!source) return;
+    Object.entries(copy).forEach(([field, value]) => {
+      source[field] = localized(value);
+    });
+  });
+}
+
+function setSelectText(select, labels) {
+  Object.entries(labels).forEach(([value, label]) => {
+    const option = select.querySelector(`option[value="${value}"]`);
+    if (option) option.textContent = label;
+  });
+}
+
+function applyStaticLanguage() {
+  document.documentElement.lang = state.lang === "ko" ? "ko" : "en";
+  document.querySelector(".eyebrow").textContent = t("eyebrow");
+  els.sourceTabs.forEach((tab) => {
+    const config = SOURCES[tab.dataset.source];
+    if (config) tab.textContent = config.label;
+  });
+  document.getElementById("searchLabel").textContent = t("search");
+  document.getElementById("searchButton").textContent = t("search");
+  document.getElementById("searchModeLabel").textContent = t("searchField");
+  document.getElementById("categoryFilterLabel").textContent = t("marketingCategory");
+  document.getElementById("resultLimitLabel").textContent = t("limit");
+  document.getElementById("sortModeLabel").textContent = t("sort");
+  document.getElementById("strictModeLabel").textContent = t("hideWeak");
+  document.getElementById("resultsLabel").textContent = t("results");
+  document.getElementById("prevPage").textContent = t("previous");
+  document.getElementById("nextPage").textContent = t("next");
+  document.querySelector(".score-col").textContent = t("score");
+  document.getElementById("productHeader").textContent = t("product");
+  document.getElementById("ingredientHeader").textContent = t("ingredient");
+  document.getElementById("companyHeader").textContent = t("company");
+  document.getElementById("detailHeader").textContent = t("detail");
+  document.querySelector(".app-footer span:nth-child(2)").innerHTML = `${escapeHtml(t("builtBy"))} <strong class="credit-name">Jun</strong>`;
+
+  setSelectText(els.searchMode, {
+    smart: t("smart"),
+    brand: t("brandProduct"),
+    ingredient: t("ingredient"),
+    ndc: t("ndcCode"),
+    labeler: t("company")
+  });
+  setSelectText(els.sortMode, {
+    relevance: t("relevance"),
+    brand: t("productName"),
+    labeler: t("company")
+  });
+  const allOption = els.categoryFilter.querySelector('option[value=""]');
+  if (allOption) allOption.textContent = t("all");
+
+  els.languageButtons.forEach((button) => {
+    const active = button.dataset.lang === state.lang;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+}
+
+function setLanguage(lang, { run = true } = {}) {
+  if (!SUPPORTED_LANGS.includes(lang) || lang === state.lang) return;
+
+  state.lang = lang;
+  window.localStorage.setItem("openfda-lang", state.lang);
+  applySourceTranslations();
+  applyStaticLanguage();
+  applySource(state.source, { run: run && Boolean(els.keyword.value.trim()) });
+}
 
 function toArray(value) {
   if (!value) return [];
@@ -512,6 +846,7 @@ function syncUrlQuery(query) {
   const url = new URL(window.location.href);
   if (query) url.searchParams.set("q", query);
   else url.searchParams.delete("q");
+  url.searchParams.set("lang", state.lang);
 
   if (state.source === "us") url.searchParams.delete("source");
   else url.searchParams.set("source", state.source);
@@ -546,7 +881,7 @@ function renderWarnings() {
   const link = sourceLink(SOURCES[state.source]);
   els.sourceWarnings.innerHTML = `
     <div class="source-limit-card">
-      <div class="source-limit-title">Source limits</div>
+      <div class="source-limit-title">${escapeHtml(t("sourceLimits"))}</div>
       <div class="source-limit-body">
         ${warnings.map((warning) => `<span>${escapeHtml(warning)}</span>`).join("")}
         ${link ? `<span>${link}</span>` : ""}
@@ -569,13 +904,13 @@ function renderSourceEmpty() {
 }
 
 function renderManualSource(config) {
-  els.resultCount.textContent = "Manual";
+  els.resultCount.textContent = t("manualShort");
   els.tableScroll.hidden = true;
   els.manualResult.hidden = false;
   els.manualResult.innerHTML = `
     <div class="manual-card">
       <div>
-        <strong>Manual verification required</strong>
+        <strong>${escapeHtml(t("manualRequired"))}</strong>
         <p>${escapeHtml(config.empty)}</p>
       </div>
       ${sourceLink(config)}
@@ -600,7 +935,7 @@ function renderRows() {
   els.tableScroll.hidden = false;
   els.manualResult.hidden = true;
   const rows = currentRows();
-  els.resultCount.textContent = rows.length.toLocaleString();
+  els.resultCount.textContent = numberText(rows.length);
 
   if (!rows.length) {
     renderSourceEmpty();
@@ -610,11 +945,11 @@ function renderRows() {
   els.resultsBody.innerHTML = rows.map((row, index) => {
     const ingredientText = toArray(row.activeIngredients).slice(0, 4).map(escapeHtml).join("<br>");
     const moreIngredients = toArray(row.activeIngredients).length > 4
-      ? `<span class="subtext">+${toArray(row.activeIngredients).length - 4} more</span>`
+      ? `<span class="subtext">+${toArray(row.activeIngredients).length - 4} ${escapeHtml(t("more"))}</span>`
       : "";
     const packageText = toArray(row.packageNdcs).slice(0, 2).map(escapeHtml).join("<br>") || "N/A";
     const packageMore = toArray(row.packageNdcs).length > 2
-      ? `<br><span class="subtext">+${toArray(row.packageNdcs).length - 2} more</span>`
+      ? `<br><span class="subtext">+${toArray(row.packageNdcs).length - 2} ${escapeHtml(t("more"))}</span>`
       : "";
 
     return `
@@ -631,7 +966,7 @@ function renderRows() {
         <td>${ingredientText}${moreIngredients}</td>
         <td>
           ${escapeHtml(row.labeler)}
-          <div class="subtext">Application: ${escapeHtml(row.applicationNumber)}</div>
+          <div class="subtext">${escapeHtml(t("application"))}: ${escapeHtml(row.applicationNumber)}</div>
         </td>
         <td>
           ${escapeHtml(row.dosageForm)}
@@ -651,7 +986,7 @@ function renderRows() {
 
 function renderPager() {
   if (SOURCES[state.source].manualOnly) {
-    els.pageLabel.textContent = "Manual";
+    els.pageLabel.textContent = t("manualShort");
     els.prevPage.disabled = true;
     els.nextPage.disabled = true;
     return;
@@ -701,11 +1036,11 @@ async function runUsSearch(query, page, broad) {
   state.total = total;
   state.rawItems = items;
   state.rows = items.map(mapUsItem);
-  if (data.meta?.last_updated) els.apiDate.textContent = `Updated ${data.meta.last_updated}`;
+  if (data.meta?.last_updated) els.apiDate.textContent = `${t("updated")} ${data.meta.last_updated}`;
 
   setStatus(
-    `Search: ${escapeHtml(query)}`,
-    `openFDA returned ${total.toLocaleString()} matches; showing ${items.length.toLocaleString()} on this page.`
+    t("searchTerm", { query: escapeHtml(query) }),
+    t("usStatus", { total: numberText(total), shown: numberText(items.length) })
   );
 }
 
@@ -719,11 +1054,11 @@ async function runEuSearch(query, page) {
   state.total = total;
   state.rawItems = items;
   state.rows = items.map(mapEuItem);
-  if (data.meta?.timestamp) els.apiDate.textContent = `Updated ${data.meta.timestamp.slice(0, 10)}`;
+  if (data.meta?.timestamp) els.apiDate.textContent = `${t("updated")} ${data.meta.timestamp.slice(0, 10)}`;
 
   setStatus(
-    `Search: ${escapeHtml(query)}`,
-    `EMA returned ${total.toLocaleString()} authorised centralised matches; showing ${items.length.toLocaleString()} on this page.`
+    t("searchTerm", { query: escapeHtml(query) }),
+    t("euStatus", { total: numberText(total), shown: numberText(items.length) })
   );
 }
 
@@ -737,11 +1072,11 @@ async function runFrSearch(query, page) {
   state.total = total;
   state.rawItems = items;
   state.rows = items.map(mapFrItem);
-  if (data.meta?.loadedAt) els.apiDate.textContent = `Loaded ${data.meta.loadedAt.slice(0, 10)}`;
+  if (data.meta?.loadedAt) els.apiDate.textContent = `${t("loaded")} ${data.meta.loadedAt.slice(0, 10)}`;
 
   setStatus(
-    `Search: ${escapeHtml(query)}`,
-    `France BDPM returned ${total.toLocaleString()} active commercialised matches; showing ${items.length.toLocaleString()} on this page.`
+    t("searchTerm", { query: escapeHtml(query) }),
+    t("frStatus", { total: numberText(total), shown: numberText(items.length) })
   );
 }
 
@@ -758,8 +1093,8 @@ async function runUkSearch(query, page) {
   els.apiDate.textContent = "MHRA Products";
 
   setStatus(
-    `Search: ${escapeHtml(query)}`,
-    `MHRA returned ${total.toLocaleString()} medicine document matches; showing ${items.length.toLocaleString()} on this page. Legal supply category is not structured in this result.`
+    t("searchTerm", { query: escapeHtml(query) }),
+    t("ukStatus", { total: numberText(total), shown: numberText(items.length) })
   );
 }
 
@@ -775,8 +1110,8 @@ async function runDeSearch(query, page) {
   els.apiDate.textContent = "BfArM AMIce";
 
   setStatus(
-    "Manual verification source",
-    `Search term: ${escapeHtml(query)}. Use the AMIce portal linked in Source limits above.`
+    t("deTitle"),
+    t("deDetail", { query: escapeHtml(query) })
   );
 }
 
@@ -790,17 +1125,17 @@ async function runJpSearch(query, page) {
   state.total = total;
   state.rawItems = items;
   state.rows = items.map(mapJpItem);
-  if (data.meta?.loadedAt) els.apiDate.textContent = `Loaded ${data.meta.loadedAt.slice(0, 10)}`;
+  if (data.meta?.loadedAt) els.apiDate.textContent = `${t("loaded")} ${data.meta.loadedAt.slice(0, 10)}`;
 
   if (total) {
     setStatus(
-      `Search: ${escapeHtml(query)}`,
-      `PMDA product-name index returned ${total.toLocaleString()} matches; showing ${items.length.toLocaleString()} on this page.`
+      t("searchTerm", { query: escapeHtml(query) }),
+      t("jpStatus", { total: numberText(total), shown: numberText(items.length) })
     );
   } else {
     setStatus(
-      "No PMDA product-name match",
-      `Search term: ${escapeHtml(query)}. Try a Japanese product name or use PMDA search from Source limits.`
+      t("jpNoMatchTitle"),
+      t("jpNoMatchDetail", { query: escapeHtml(query) })
     );
   }
 }
@@ -813,10 +1148,11 @@ async function runSearch({ page = 1, broad = false } = {}) {
     state.total = 0;
     state.rows = [];
     state.rawItems = [];
-    setStatus("Enter a search term.", "Choose US OTC or EU Centralized, then search by product, ingredient, code, or company.");
-    els.resultCount.textContent = "0";
+    setStatus(t("defaultStatusTitle"), t("defaultStatusDetail"));
+    els.resultCount.textContent = numberText(0);
     renderPager();
-    renderEmpty("Search results will appear here.");
+    if (SOURCES[state.source].manualOnly) renderManualSource(SOURCES[state.source]);
+    else renderEmpty(t("resultsPlaceholder"));
     syncUrlQuery("");
     return;
   }
@@ -825,10 +1161,13 @@ async function runSearch({ page = 1, broad = false } = {}) {
   state.page = page;
   syncUrlQuery(query);
   showError("");
-  setStatus(`Searching: ${escapeHtml(query)}`, `${SOURCES[state.source].label} data is loading.`);
+  setStatus(
+    t("searching", { query: escapeHtml(query) }),
+    t("sourceLoading", { source: escapeHtml(SOURCES[state.source].label) })
+  );
   els.resultsBody.innerHTML = `
     <tr class="loading-row">
-      <td colspan="7" class="empty-state">Searching...</td>
+      <td colspan="7" class="empty-state">${escapeHtml(t("searchingShort"))}</td>
     </tr>
   `;
 
@@ -844,10 +1183,10 @@ async function runSearch({ page = 1, broad = false } = {}) {
   } catch (error) {
     state.total = 0;
     state.rows = [];
-    setStatus("Search failed", "Try a simpler query or wait a moment before searching again.");
+    setStatus(t("searchFailedTitle"), t("searchFailedDetail"));
     showError(error.message);
     renderPager();
-    renderEmpty(`${SOURCES[state.source].label} data could not be loaded.`);
+    renderEmpty(t("dataCouldNotLoad", { source: SOURCES[state.source].label }));
   }
 }
 
@@ -1173,36 +1512,36 @@ async function fetchLabel(row) {
 function setDetailTitles(detail, row) {
   const titles = detail.querySelectorAll("h3");
   if (row.source === "eu") {
-    titles[0].textContent = "Dataset";
-    titles[1].textContent = "Regulatory";
-    titles[2].textContent = "Indication";
+    titles[0].textContent = t("dataset");
+    titles[1].textContent = t("regulatory");
+    titles[2].textContent = t("indication");
     return;
   }
 
   if (row.source === "fr") {
-    titles[0].textContent = "Presentations";
-    titles[1].textContent = "Regulatory";
-    titles[2].textContent = "Supply";
+    titles[0].textContent = t("presentations");
+    titles[1].textContent = t("regulatory");
+    titles[2].textContent = t("supply");
     return;
   }
 
   if (row.source === "uk") {
-    titles[0].textContent = "Document";
-    titles[1].textContent = "Regulatory";
-    titles[2].textContent = "Context";
+    titles[0].textContent = t("document");
+    titles[1].textContent = t("regulatory");
+    titles[2].textContent = t("context");
     return;
   }
 
   if (row.source === "jp") {
-    titles[0].textContent = "PMDA Index";
-    titles[1].textContent = "Verification";
-    titles[2].textContent = "Caveat";
+    titles[0].textContent = t("pmdaIndex");
+    titles[1].textContent = t("verification");
+    titles[2].textContent = t("caveat");
     return;
   }
 
-  titles[0].textContent = "Packages";
-  titles[1].textContent = "Regulatory";
-  titles[2].textContent = "Drug Label";
+  titles[0].textContent = t("packages");
+  titles[1].textContent = t("regulatory");
+  titles[2].textContent = t("label");
 }
 
 async function toggleDetail(button) {
@@ -1257,6 +1596,8 @@ function applySource(source, { run = false } = {}) {
 
   els.sourceTabs.forEach((tab) => {
     const active = tab.dataset.source === state.source;
+    const tabConfig = SOURCES[tab.dataset.source];
+    if (tabConfig) tab.textContent = tabConfig.label;
     tab.classList.toggle("active", active);
     tab.setAttribute("aria-selected", active ? "true" : "false");
   });
@@ -1277,14 +1618,20 @@ function applySource(source, { run = false } = {}) {
   state.rows = [];
   state.rawItems = [];
   showError("");
-  setStatus("Enter a search term.", config.note);
+  setStatus(t("defaultStatusTitle"), config.note);
   renderPager();
   if (config.manualOnly) renderManualSource(config);
-  else renderEmpty("Search results will appear here.");
+  else renderEmpty(t("resultsPlaceholder"));
   syncUrlQuery(els.keyword.value.trim());
 
   if (run && els.keyword.value.trim()) runSearch({ page: 1 });
 }
+
+els.languageButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setLanguage(button.dataset.lang);
+  });
+});
 
 els.form.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -1326,6 +1673,8 @@ els.resultsBody.addEventListener("click", (event) => {
 const params = new URLSearchParams(window.location.search);
 const initialSource = params.get("source") || "us";
 const initialQuery = params.get("q");
+applySourceTranslations();
+applyStaticLanguage();
 applySource(initialSource);
 
 if (initialQuery) {

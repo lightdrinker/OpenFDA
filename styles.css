@@ -101,9 +101,40 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
   gap: 8px;
   color: var(--muted);
   font-size: 12px;
+}
+
+.language-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.language-option {
+  min-height: 28px;
+  min-width: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #d9fffa;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 10px;
+}
+
+.language-option:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.language-option.active {
+  background: #f8fffc;
+  color: var(--accent-strong);
 }
 
 .header-meta span {

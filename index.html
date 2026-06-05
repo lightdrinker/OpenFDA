@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,6 +13,10 @@
       <h1>OpenFDA</h1>
     </div>
     <div class="header-meta">
+      <div class="language-toggle" role="group" aria-label="Language">
+        <button class="language-option active" type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button class="language-option" type="button" data-lang="ko" aria-pressed="false">KR</button>
+      </div>
       <span id="apiDate">openFDA NDC</span>
       <span id="sourceBadge">HUMAN OTC DRUG</span>
     </div>
@@ -36,7 +40,7 @@
 
       <form id="searchForm" class="search-form">
         <div class="search-input-wrap">
-          <label for="keyword">Search</label>
+          <label id="searchLabel" for="keyword">Search</label>
           <input
             id="keyword"
             type="search"
@@ -49,7 +53,7 @@
 
       <div class="control-grid">
         <div class="control-group">
-          <label for="searchMode">Search field</label>
+          <label id="searchModeLabel" for="searchMode">Search field</label>
           <select id="searchMode">
             <option value="smart">Smart</option>
             <option value="brand">Brand / product</option>
@@ -60,7 +64,7 @@
         </div>
 
         <div id="categoryControl" class="control-group">
-          <label for="categoryFilter">Marketing category</label>
+          <label id="categoryFilterLabel" for="categoryFilter">Marketing category</label>
           <select id="categoryFilter">
             <option value="">All</option>
             <option value="OTC MONOGRAPH DRUG">OTC MONOGRAPH DRUG</option>
@@ -72,7 +76,7 @@
         </div>
 
         <div class="control-group">
-          <label for="resultLimit">Limit</label>
+          <label id="resultLimitLabel" for="resultLimit">Limit</label>
           <select id="resultLimit">
             <option value="20">20</option>
             <option value="50">50</option>
@@ -81,7 +85,7 @@
         </div>
 
         <div class="control-group">
-          <label for="sortMode">Sort</label>
+          <label id="sortModeLabel" for="sortMode">Sort</label>
           <select id="sortMode">
             <option value="relevance">Relevance</option>
             <option value="brand">Product name</option>
@@ -92,7 +96,7 @@
 
         <label class="switch-row">
           <input id="strictMode" type="checkbox" checked />
-          <span>Hide weak matches</span>
+          <span id="strictModeLabel">Hide weak matches</span>
         </label>
       </div>
     </section>
@@ -108,7 +112,7 @@
       <div class="results-toolbar">
         <div>
           <strong id="resultCount">0</strong>
-          <span>results</span>
+          <span id="resultsLabel">results</span>
         </div>
         <div class="pager">
           <button id="prevPage" type="button" disabled>Previous</button>
@@ -125,8 +129,8 @@
             <tr>
               <th class="score-col">Score</th>
               <th id="productHeader">Product</th>
-              <th>Ingredient</th>
-              <th>Company</th>
+              <th id="ingredientHeader">Ingredient</th>
+              <th id="companyHeader">Company</th>
               <th id="formHeader">Form</th>
               <th id="codeHeader">NDC</th>
               <th id="detailHeader" class="action-col">Detail</th>

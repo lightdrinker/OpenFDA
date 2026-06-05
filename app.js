@@ -2,6 +2,8 @@ const API_BASE = "https://api.fda.gov";
 const NDC_ENDPOINT = `${API_BASE}/drug/ndc.json`;
 const LABEL_ENDPOINT = `${API_BASE}/drug/label.json`;
 const EU_ENDPOINT = "/api/eu-search";
+const UK_ENDPOINT = "/api/uk-search";
+const DE_ENDPOINT = "/api/de-search";
 
 const SOURCES = {
   us: {
@@ -15,6 +17,18 @@ const SOURCES = {
     formHeader: "Form",
     dateSortLabel: "Listing expiration",
     detailButton: "Detail"
+  },
+  uk: {
+    label: "UK MHRA",
+    apiLabel: "MHRA Products",
+    badge: "Medicine documents",
+    note: "United Kingdom MHRA Products search for medicine documents by product, active substance, or Product Licence number. Legal supply category is not returned as a structured field.",
+    placeholder: "Example: advil, nurofen, ibuprofen, PL 00327/0197",
+    empty: "No matching UK MHRA medicine documents.",
+    codeHeader: "PL No.",
+    formHeader: "Document",
+    dateSortLabel: "Document date",
+    detailButton: "MHRA"
   },
   eu: {
     label: "EMA Centralized",
@@ -39,6 +53,20 @@ const SOURCES = {
     formHeader: "Form",
     dateSortLabel: "AMM date",
     detailButton: "BDPM"
+  },
+  de: {
+    label: "Germany AMIce",
+    apiLabel: "BfArM AMIce",
+    badge: "Manual portal",
+    note: "Germany national register is BfArM AMIce Public Part. The official portal is public, but a stable server-readable JSON/API search endpoint is not exposed.",
+    placeholder: "Example: ibuprofen, aspirin, nurofen, Zul.-Nr.",
+    empty: "Germany AMIce cannot be queried directly from this app yet. Use the official AMIce Public Part portal for final verification.",
+    codeHeader: "Zul.-Nr.",
+    formHeader: "Register",
+    dateSortLabel: "Updated",
+    detailButton: "AMIce",
+    manualUrl: "https://portal.dimdi.de/amguifree/?accessid=amis_off_am_ppv&lang=de",
+    manualLabel: "Open AMIce Public Part"
   }
 };
 
@@ -133,6 +161,7 @@ function formatDate(value) {
   const text = String(value || "").trim();
   if (!text) return "N/A";
   if (/^\d{8}$/.test(text)) return `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`;
+  if (/^\d{4}-\d{2}-\d{2}T/.test(text)) return text.slice(0, 10);
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(text)) {
     const [day, month, year] = text.split("/");
     return `${year}-${month}-${day}`;
@@ -243,6 +272,26 @@ function buildFrSearchUrl(query, page) {
   return `/api/fr-search?${params.toString()}`;
 }
 
+function buildUkSearchUrl(query, page) {
+  const params = new URLSearchParams({
+    q: query,
+    mode: els.searchMode.value,
+    limit: els.resultLimit.value,
+    page: String(page)
+  });
+  return `${UK_ENDPOINT}?${params.toString()}`;
+}
+
+function buildDeSearchUrl(query, page) {
+  const params = new URLSearchParams({
+    q: query,
+    mode: els.searchMode.value,
+    limit: els.resultLimit.value,
+    page: String(page)
+  });
+  return `${DE_ENDPOINT}?${params.toString()}`;
+}
+
 function scoreUsItem(item, query) {
   const kw = normalize(query);
   const tokens = kw.split(" ").filter((token) => token.length > 1);
@@ -324,6 +373,24 @@ function mapFrItem(item, index) {
   };
 }
 
+function mapUkItem(item, index) {
+  return {
+    ...item,
+    id: `uk-${item.id || item.productNdc || index}-${index}`,
+    source: "uk",
+    item
+  };
+}
+
+function mapDeItem(item, index) {
+  return {
+    ...item,
+    id: `de-${item.id || item.productNdc || index}-${index}`,
+    source: "de",
+    item
+  };
+}
+
 function sortRows(rows) {
   const mode = els.sortMode.value;
   const copy = [...rows];
@@ -379,6 +446,24 @@ function renderEmpty(message) {
   `;
 }
 
+function sourceLink(config) {
+  if (!config.manualUrl) return "";
+  return `<a class="inline-link" href="${escapeHtml(config.manualUrl)}" target="_blank" rel="noreferrer">${escapeHtml(config.manualLabel || "Open source")}</a>`;
+}
+
+function renderSourceEmpty() {
+  const config = SOURCES[state.source];
+  const link = sourceLink(config);
+  els.resultsBody.innerHTML = `
+    <tr>
+      <td colspan="7" class="empty-state">
+        ${escapeHtml(config.empty)}
+        ${link ? `<div class="empty-action">${link}</div>` : ""}
+      </td>
+    </tr>
+  `;
+}
+
 function currentRows() {
   const strict = els.strictMode.checked;
   let rows = sortRows(state.rows);
@@ -391,7 +476,7 @@ function renderRows() {
   els.resultCount.textContent = rows.length.toLocaleString();
 
   if (!rows.length) {
-    renderEmpty(SOURCES[state.source].empty);
+    renderSourceEmpty();
     return;
   }
 
@@ -526,6 +611,41 @@ async function runFrSearch(query, page) {
   );
 }
 
+async function runUkSearch(query, page) {
+  const url = buildUkSearchUrl(query, page);
+  state.lastSearchUrl = url;
+  const data = await fetchJson(url);
+  const items = data.results || [];
+  const total = data.meta?.results?.total || 0;
+
+  state.total = total;
+  state.rawItems = items;
+  state.rows = items.map(mapUkItem);
+  els.apiDate.textContent = "MHRA Products";
+
+  setStatus(
+    `Search: ${escapeHtml(query)}`,
+    `MHRA returned ${total.toLocaleString()} medicine document matches; showing ${items.length.toLocaleString()} on this page. Legal supply category is not structured in this result.`
+  );
+}
+
+async function runDeSearch(query, page) {
+  const url = buildDeSearchUrl(query, page);
+  state.lastSearchUrl = url;
+  const data = await fetchJson(url);
+  const items = data.results || [];
+
+  state.total = data.meta?.results?.total || 0;
+  state.rawItems = items;
+  state.rows = items.map(mapDeItem);
+  els.apiDate.textContent = "BfArM AMIce";
+
+  setStatus(
+    `Search: ${escapeHtml(query)}`,
+    `${escapeHtml(data.meta?.notice || SOURCES.de.empty)} ${sourceLink(SOURCES.de)}`
+  );
+}
+
 async function runSearch({ page = 1, broad = false } = {}) {
   const query = els.keyword.value.trim();
   if (!query) {
@@ -556,6 +676,8 @@ async function runSearch({ page = 1, broad = false } = {}) {
   try {
     if (state.source === "eu") await runEuSearch(query, page);
     else if (state.source === "fr") await runFrSearch(query, page);
+    else if (state.source === "uk") await runUkSearch(query, page);
+    else if (state.source === "de") await runDeSearch(query, page);
     else await runUsSearch(query, page, broad);
     renderRows();
     renderPager();
@@ -613,7 +735,45 @@ function makeFrPresentationMarkup(row) {
   `).join("");
 }
 
+function makeUkDocumentMarkup(row) {
+  return `
+    <div class="detail-block">
+      <strong>${escapeHtml(row.documentType || row.productType || "MHRA document")}</strong>
+      <div>${escapeHtml(row.brand)}</div>
+      <div class="muted">File: ${escapeHtml(row.documentFile || "N/A")}</div>
+    </div>
+    <div class="detail-block">
+      <strong>Territory</strong>
+      <div>${escapeHtml(row.territory || row.route || "UK-wide document")}</div>
+    </div>
+    <a class="source-link" href="${escapeHtml(row.medicineUrl)}" target="_blank" rel="noreferrer">MHRA document</a>
+  `;
+}
+
 function makeRegulatoryMarkup(row) {
+  if (row.source === "uk") {
+    const productSearchUrl = `https://products.mhra.gov.uk/search/?search=${encodeURIComponent(row.productNdc)}`;
+    return `
+      <div class="detail-block">
+        <strong>Product Licence number</strong>
+        <div>${escapeHtml(row.productNdc)}</div>
+      </div>
+      <div class="detail-block">
+        <strong>Source</strong>
+        <div>MHRA Products</div>
+      </div>
+      <div class="detail-block">
+        <strong>Document date</strong>
+        <div>${escapeHtml(formatDate(row.marketingStart))}</div>
+      </div>
+      <div class="detail-block">
+        <strong>Supply category</strong>
+        <div>${escapeHtml(row.supplySignal || "Check SmPC/PIL for legal supply status.")}</div>
+      </div>
+      <a class="source-link" href="${escapeHtml(productSearchUrl)}" target="_blank" rel="noreferrer">MHRA product search</a>
+    `;
+  }
+
   if (row.source === "eu") {
     return `
       <div class="detail-block">
@@ -766,6 +926,19 @@ function makeFrConditionMarkup(row) {
   `;
 }
 
+function makeUkContextMarkup(row) {
+  return `
+    <div class="detail-block">
+      <strong>Search context</strong>
+      <div>${escapeHtml(row.indication || "No highlighted document context returned.")}</div>
+    </div>
+    <div class="detail-block">
+      <strong>Note</strong>
+      <div>MHRA Products results are document-centric (SPC, PIL, PAR). For OTC screening, confirm P/GSL/POM status in the linked SmPC/PIL or other official UK source.</div>
+    </div>
+  `;
+}
+
 async function fetchLabel(row) {
   if (row.source !== "us") return null;
 
@@ -808,6 +981,13 @@ function setDetailTitles(detail, row) {
     return;
   }
 
+  if (row.source === "uk") {
+    titles[0].textContent = "Document";
+    titles[1].textContent = "Regulatory";
+    titles[2].textContent = "Context";
+    return;
+  }
+
   titles[0].textContent = "Packages";
   titles[1].textContent = "Regulatory";
   titles[2].textContent = "Drug Label";
@@ -835,12 +1015,16 @@ async function toggleDetail(button) {
     ? makeEuDatasetMarkup(row)
     : row.source === "fr"
       ? makeFrPresentationMarkup(row)
+      : row.source === "uk"
+        ? makeUkDocumentMarkup(row)
       : makeUsPackageMarkup(row);
   detail.querySelector('[data-field="regulatory"]').innerHTML = makeRegulatoryMarkup(row);
   detail.querySelector('[data-field="label"]').innerHTML = row.source === "eu"
     ? makeEuLabelMarkup(row)
     : row.source === "fr"
       ? makeFrConditionMarkup(row)
+      : row.source === "uk"
+        ? makeUkContextMarkup(row)
       : '<p class="muted">Loading Drug Label...</p>';
   currentTr.after(detail);
 
@@ -861,7 +1045,7 @@ function applySource(source, { run = false } = {}) {
     tab.setAttribute("aria-selected", active ? "true" : "false");
   });
 
-  els.sourceNote.textContent = config.note;
+  els.sourceNote.innerHTML = `${escapeHtml(config.note)} ${sourceLink(config)}`;
   els.sourceBadge.textContent = config.badge;
   els.apiDate.textContent = config.apiLabel;
   els.keyword.placeholder = config.placeholder;

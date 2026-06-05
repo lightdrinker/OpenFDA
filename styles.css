@@ -440,8 +440,22 @@ tbody tr:hover:not(.detail-row) {
   text-decoration: none;
 }
 
+.inline-link {
+  color: var(--blue);
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .source-link:hover {
   text-decoration: underline;
+}
+
+.inline-link:hover {
+  text-decoration: underline;
+}
+
+.empty-action {
+  margin-top: 10px;
 }
 
 .loading-row {

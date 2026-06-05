@@ -38,6 +38,18 @@ createServer(async (request, response) => {
     return;
   }
 
+  if ((request.url || "").startsWith("/api/uk-search")) {
+    const { default: handler } = await import("./api/uk-search.js");
+    await handler(request, response);
+    return;
+  }
+
+  if ((request.url || "").startsWith("/api/de-search")) {
+    const { default: handler } = await import("./api/de-search.js");
+    await handler(request, response);
+    return;
+  }
+
   const filePath = resolvePath(request.url || "/");
   if (!filePath || !existsSync(filePath) || statSync(filePath).isDirectory()) {
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });

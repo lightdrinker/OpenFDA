@@ -44,8 +44,8 @@ const UI_TEXT = {
     score: "Score",
     product: "Product",
     detail: "Detail",
-    sourceLimits: "Source limits",
-    manualRequired: "Manual verification required",
+    sourceLimits: "Check guidance",
+    manualRequired: "Check in the official portal",
     manualShort: "Manual",
     defaultStatusTitle: "Enter a search term.",
     defaultStatusDetail: "Choose a country/source, then search by product, ingredient, code, or company.",
@@ -109,8 +109,8 @@ const UI_TEXT = {
     score: "점수",
     product: "제품",
     detail: "상세",
-    sourceLimits: "데이터 한계",
-    manualRequired: "수동 확인 필요",
+    sourceLimits: "확인 안내",
+    manualRequired: "공식 포털에서 확인하세요",
     manualShort: "수동",
     defaultStatusTitle: "검색어를 입력하세요.",
     defaultStatusDetail: "국가/소스를 선택한 뒤 제품명, 성분명, 코드 또는 회사명으로 검색하세요.",
@@ -222,9 +222,9 @@ const SOURCES = {
     label: "Germany AMIce",
     apiLabel: "BfArM AMIce",
     badge: "Manual portal",
-    note: "Germany AMIce must be checked in the official BfArM portal from this app.",
+    note: "Germany AMIce results should be confirmed in the official BfArM portal.",
     placeholder: "Example: ibuprofen, aspirin, nurofen, Zul.-Nr.",
-    empty: "Use the official AMIce portal for Germany product, ingredient, company, authorisation number, and register checks.",
+    empty: "AMIce is an official web search portal. This app cannot reliably import its result table, so confirm German product names, ingredients, companies, authorisation numbers, and register status directly in AMIce.",
     codeHeader: "Zul.-Nr.",
     formHeader: "Register",
     dateSortLabel: "Updated",
@@ -234,8 +234,8 @@ const SOURCES = {
     manualOnly: true,
     searchDisabled: true,
     warnings: [
-      "The search box is hidden for Germany to avoid false no-result interpretation.",
-      "AMIce is the official manual verification route for product, active substance, company, and authorisation checks."
+      "Why direct confirmation is needed: AMIce does not provide a stable public result feed that this app can import.",
+      "Search tip: company names may appear under local German entities or older company names."
     ]
   },
   jp: {
@@ -262,9 +262,9 @@ SOURCES.jp = {
   label: "Japan PMDA",
   apiLabel: "PMDA OTC/BTC",
   badge: "Manual PMDA portal",
-  note: "Japan PMDA should be checked in the official portal from this app.",
+  note: "Japan PMDA results should be confirmed in the official PMDA portal.",
   placeholder: "Example: EVE, Bufferin, Loxonin, Allegra, ibuprofen",
-  empty: "Use the official PMDA portal for Japan product, ingredient, company, risk-category, and package-insert checks.",
+  empty: "PMDA shows product names, ingredients, companies, risk categories, and package inserts inside its official search screen. This app cannot reliably import the full result table, so confirm Japan entries directly in PMDA.",
   codeHeader: "PMDA",
   formHeader: "Index",
   dateSortLabel: "Loaded",
@@ -274,9 +274,8 @@ SOURCES.jp = {
   manualOnly: true,
   searchDisabled: true,
   warnings: [
-    "The search box is hidden for Japan to avoid false no-result interpretation.",
-    "PMDA's official portal has product-name, ingredient, company, risk-category, and package-insert search fields.",
-    "Japanese terms are still the most reliable inside PMDA; use English/Romanized terms only as hints."
+    "Why direct confirmation is needed: PMDA exposes only limited product-name hints outside the portal, not the full ingredient/company/risk-category result table.",
+    "Search tip: Japanese product or ingredient names are the most reliable; English or Romanized names are useful only as hints."
   ]
 };
 
@@ -332,9 +331,9 @@ const SOURCE_I18N = {
   de: {
     label: { en: "Germany AMIce", ko: "독일 AMIce" },
     badge: { en: "Manual portal", ko: "수동 포털" },
-    note: { en: "Germany AMIce must be checked in the official BfArM portal from this app.", ko: "독일 AMIce는 이 앱에서 공식 BfArM 포털로 확인합니다." },
+    note: { en: "Germany AMIce results should be confirmed in the official BfArM portal.", ko: "독일 AMIce 결과는 공식 BfArM 포털에서 확인합니다." },
     placeholder: { en: "Example: ibuprofen, aspirin, nurofen, Zul.-Nr.", ko: "예: ibuprofen, aspirin, nurofen, Zul.-Nr." },
-    empty: { en: "Use the official AMIce portal for Germany product, ingredient, company, authorisation number, and register checks.", ko: "독일 제품명, 성분명, 회사명, 허가번호, 등록 상태는 공식 AMIce 포털에서 확인하세요." },
+    empty: { en: "AMIce is an official web search portal. This app cannot reliably import its result table, so confirm German product names, ingredients, companies, authorisation numbers, and register status directly in AMIce.", ko: "AMIce는 공식 웹사이트 화면에서 조회하는 포털입니다. 이 앱이 결과표를 안정적으로 가져올 수 없기 때문에, 독일 제품명, 성분명, 회사명, 허가번호, 등록 상태는 AMIce에서 직접 확인하세요." },
     codeHeader: { en: "Zul.-Nr.", ko: "Zul.-Nr." },
     formHeader: { en: "Register", ko: "등록" },
     dateSortLabel: { en: "Updated", ko: "업데이트" },
@@ -342,26 +341,25 @@ const SOURCE_I18N = {
     warnings: {
       en: SOURCES.de.warnings,
       ko: [
-        "독일은 잘못된 0건 해석을 막기 위해 검색창을 숨겼습니다.",
-        "제품명, 성분명, 회사명, 허가번호 확인은 공식 AMIce 포털에서 수동으로 확인하세요."
+        "직접 확인이 필요한 이유: AMIce는 이 앱이 결과표를 가져올 수 있는 안정적인 공개 연결 방식을 제공하지 않습니다.",
+        "검색 팁: 회사명은 독일 현지 법인명이나 이전 회사명으로 표시될 수 있습니다."
       ]
     }
   },
   jp: {
     label: { en: "Japan PMDA", ko: "일본 PMDA" },
     badge: { en: "Manual PMDA portal", ko: "PMDA 수동 포털" },
-    note: { en: "Japan PMDA should be checked in the official portal from this app.", ko: "일본 PMDA는 이 앱에서 공식 포털로 확인합니다." },
+    note: { en: "Japan PMDA results should be confirmed in the official PMDA portal.", ko: "일본 PMDA 결과는 공식 PMDA 포털에서 확인합니다." },
     placeholder: { en: "Example: EVE, Bufferin, Loxonin, Allegra, ibuprofen", ko: "예: EVE, Bufferin, Loxonin, Allegra, ibuprofen" },
-    empty: { en: "Use the official PMDA portal for Japan product, ingredient, company, risk-category, and package-insert checks.", ko: "일본 제품명, 성분명, 회사명, 리스크 구분, 첨부문서는 공식 PMDA 포털에서 확인하세요." },
+    empty: { en: "PMDA shows product names, ingredients, companies, risk categories, and package inserts inside its official search screen. This app cannot reliably import the full result table, so confirm Japan entries directly in PMDA.", ko: "PMDA는 제품명, 성분명, 회사명, 리스크 구분, 첨부문서를 공식 검색 화면 안에서 보여줍니다. 이 앱이 전체 결과표를 안정적으로 가져올 수 없기 때문에, 일본 자료는 PMDA에서 직접 확인하세요." },
     formHeader: { en: "Index", ko: "색인" },
     dateSortLabel: { en: "Loaded", ko: "불러온 날짜" },
     manualLabel: { en: "Open PMDA OTC search", ko: "PMDA OTC 검색 열기" },
     warnings: {
       en: SOURCES.jp.warnings,
       ko: [
-        "일본은 잘못된 0건 해석을 막기 위해 검색창을 숨겼습니다.",
-        "PMDA 공식 포털에는 제품명, 성분명, 회사명, 리스크 구분, 첨부문서 검색 필드가 있습니다.",
-        "PMDA 안에서는 일본어 검색어가 가장 안정적이며, 영문/로마자 표기는 참고 힌트로만 사용하세요."
+        "직접 확인이 필요한 이유: PMDA는 포털 밖에서는 일부 제품명 힌트만 확인 가능하고, 성분명/회사명/리스크 구분 결과표는 공식 화면에서 확인해야 합니다.",
+        "검색 팁: PMDA에서는 일본어 제품명이나 성분명이 가장 정확합니다. 영문/로마자 표기는 참고용 힌트로만 사용하세요."
       ]
     }
   },
@@ -411,9 +409,11 @@ const els = {
   resultLimit: document.getElementById("resultLimit"),
   sortMode: document.getElementById("sortMode"),
   strictMode: document.getElementById("strictMode"),
+  statusBar: document.querySelector(".status-bar"),
   statusTitle: document.getElementById("statusTitle"),
   statusDetail: document.getElementById("statusDetail"),
   resultCount: document.getElementById("resultCount"),
+  resultsToolbar: document.querySelector(".results-toolbar"),
   resultsBody: document.getElementById("resultsBody"),
   tableScroll: document.getElementById("tableScroll"),
   manualResult: document.getElementById("manualResult"),
@@ -870,6 +870,7 @@ function syncUrlQuery(query) {
 function renderEmpty(message) {
   els.tableScroll.hidden = false;
   els.manualResult.hidden = true;
+  if (els.resultsToolbar) els.resultsToolbar.classList.remove("is-hidden");
   els.resultsBody.innerHTML = `
     <tr>
       <td colspan="7" class="empty-state">${escapeHtml(message)}</td>
@@ -907,6 +908,7 @@ function renderSourceEmpty() {
   const config = SOURCES[state.source];
   els.tableScroll.hidden = false;
   els.manualResult.hidden = true;
+  if (els.resultsToolbar) els.resultsToolbar.classList.remove("is-hidden");
   els.resultsBody.innerHTML = `
     <tr>
       <td colspan="7" class="empty-state">
@@ -920,6 +922,7 @@ function renderManualSource(config) {
   els.resultCount.textContent = t("manualShort");
   els.tableScroll.hidden = true;
   els.manualResult.hidden = false;
+  if (els.resultsToolbar) els.resultsToolbar.classList.add("is-hidden");
   els.manualResult.innerHTML = `
     <div class="manual-card">
       <div>
@@ -935,6 +938,7 @@ function renderManualNotice(notice) {
   els.resultCount.textContent = t("manualShort");
   els.tableScroll.hidden = true;
   els.manualResult.hidden = false;
+  if (els.resultsToolbar) els.resultsToolbar.classList.add("is-hidden");
   els.manualResult.innerHTML = `
     <div class="manual-card">
       <div>
@@ -967,6 +971,7 @@ function renderRows() {
 
   els.tableScroll.hidden = false;
   els.manualResult.hidden = true;
+  if (els.resultsToolbar) els.resultsToolbar.classList.remove("is-hidden");
   const rows = currentRows();
   els.resultCount.textContent = numberText(rows.length);
 
@@ -1208,7 +1213,6 @@ async function runSearch({ page = 1, broad = false } = {}) {
     state.rows = [];
     state.rawItems = [];
     state.manualNotice = null;
-    setStatus(t("manualRequired"), config.note);
     els.resultCount.textContent = t("manualShort");
     renderPager();
     renderManualSource(config);
@@ -1690,6 +1694,7 @@ function applySource(source, { run = false } = {}) {
   els.formHeader.textContent = config.formHeader;
   els.form.classList.toggle("is-hidden", searchDisabled);
   els.controlGrid.classList.toggle("is-hidden", searchDisabled);
+  if (els.statusBar) els.statusBar.classList.toggle("is-hidden", searchDisabled);
   els.keyword.disabled = searchDisabled;
   els.searchMode.disabled = searchDisabled;
   els.resultLimit.disabled = searchDisabled;
@@ -1705,7 +1710,7 @@ function applySource(source, { run = false } = {}) {
   state.rawItems = [];
   state.manualNotice = null;
   showError("");
-  setStatus(t("defaultStatusTitle"), config.note);
+  if (!searchDisabled) setStatus(t("defaultStatusTitle"), config.note);
   renderPager();
   if (config.manualOnly) renderManualSource(config);
   else renderEmpty(t("resultsPlaceholder"));

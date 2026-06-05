@@ -23,9 +23,9 @@ France search uses BDPM `CIS_bdpm`, `CIS_COMPO`, `CIS_CIP`, `CIS_CPD`, and `CIS_
 
 UK search uses the MHRA Products search index and returns medicine documents such as SmPC, PIL, and PAR records. It can search by product, active substance, or Product Licence number, but legal supply category is not returned as a structured field.
 
-Germany AMIce Public Part is the official public German register. Its public portal is linked in the app, but a stable server-readable JSON/API endpoint was not available during implementation, so Germany is currently a manual verification tab with the search controls hidden to avoid false no-result interpretation.
+Germany AMIce Public Part is the official public German register. AMIce works as an official web search portal, and the app cannot reliably import its result table. Germany is therefore presented as an official-portal verification tab.
 
-Japan PMDA's official OTC/guidance-required portal supports product-name, ingredient, company, risk-category, and package-insert searches. Because the app can only access PMDA's public product-name suggestion index, the Japan tab now hides search controls and routes users to the official PMDA portal instead of presenting partial automated results as authoritative.
+Japan PMDA's official OTC/guidance-required portal supports product-name, ingredient, company, risk-category, and package-insert searches. PMDA exposes only limited product-name hints outside the portal, so Japan is presented as an official-portal verification tab rather than a partial automated search.
 
 ## Run Locally
 

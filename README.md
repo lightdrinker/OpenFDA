@@ -49,3 +49,10 @@ http://127.0.0.1:8765/?source=de
 http://127.0.0.1:8765/?source=jp
 http://127.0.0.1:8765/?source=eu&q=emedastine
 ```
+
+## PWA Assets
+
+- Manifest: `manifest.webmanifest`
+- Service worker: `sw.js`
+- Install icons: `icons/icon-192.png`, `icons/icon-512.png`, `icons/maskable-512.png`
+- iOS touch icon: `icons/apple-touch-icon.png`

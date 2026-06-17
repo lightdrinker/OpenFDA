@@ -84,7 +84,16 @@ const UI_TEXT = {
     more: "more",
     updated: "Updated",
     loaded: "Loaded",
-    builtBy: "Built by"
+    builtBy: "Built by",
+    bugReport: "Bug report",
+    withinSearch: "Search within loaded results",
+    withinSearchPlaceholder: "Filter loaded results",
+    withinTarget: "Search target",
+    withinAll: "All columns",
+    withinProduct: "Product",
+    withinCode: "Code",
+    clearFilter: "Clear",
+    withinNoResults: "No loaded results match this filter."
   },
   ko: {
     eyebrow: "CPP 국가 의약품 등록 검색",
@@ -149,7 +158,16 @@ const UI_TEXT = {
     more: "개 더 보기",
     updated: "업데이트",
     loaded: "불러온 날짜",
-    builtBy: "제작"
+    builtBy: "제작",
+    bugReport: "버그 리포트",
+    withinSearch: "불러온 결과 내 검색",
+    withinSearchPlaceholder: "현재 불러온 결과에서 찾기",
+    withinTarget: "검색 대상",
+    withinAll: "전체 컬럼",
+    withinProduct: "제품명",
+    withinCode: "코드",
+    clearFilter: "초기화",
+    withinNoResults: "현재 불러온 결과에서 일치하는 항목이 없습니다."
   }
 };
 
@@ -389,6 +407,8 @@ const state = {
   total: 0,
   rows: [],
   rawItems: [],
+  withinQuery: "",
+  withinField: "all",
   lastSearchUrl: "",
   manualNotice: null,
   labelCache: new Map()
@@ -414,6 +434,9 @@ const els = {
   statusDetail: document.getElementById("statusDetail"),
   resultCount: document.getElementById("resultCount"),
   resultsToolbar: document.querySelector(".results-toolbar"),
+  withinQuery: document.getElementById("withinQuery"),
+  withinField: document.getElementById("withinField"),
+  withinClear: document.getElementById("withinClear"),
   resultsBody: document.getElementById("resultsBody"),
   tableScroll: document.getElementById("tableScroll"),
   manualResult: document.getElementById("manualResult"),
@@ -482,7 +505,11 @@ function applyStaticLanguage() {
   document.getElementById("ingredientHeader").textContent = t("ingredient");
   document.getElementById("companyHeader").textContent = t("company");
   document.getElementById("detailHeader").textContent = t("detail");
-  document.querySelector(".app-footer span:nth-child(2)").innerHTML = `${escapeHtml(t("builtBy"))} <strong class="credit-name">Jun</strong>`;
+  document.getElementById("bugReportLink").textContent = t("bugReport");
+  document.getElementById("withinSearchLabel").textContent = t("withinSearch");
+  document.getElementById("withinFieldLabel").textContent = t("withinTarget");
+  els.withinQuery.placeholder = t("withinSearchPlaceholder");
+  els.withinClear.textContent = t("clearFilter");
 
   setSelectText(els.searchMode, {
     smart: t("smart"),
@@ -495,6 +522,13 @@ function applyStaticLanguage() {
     relevance: t("relevance"),
     brand: t("productName"),
     labeler: t("company")
+  });
+  setSelectText(els.withinField, {
+    all: t("withinAll"),
+    product: t("withinProduct"),
+    ingredient: t("ingredient"),
+    company: t("company"),
+    code: t("withinCode")
   });
   const allOption = els.categoryFilter.querySelector('option[value=""]');
   if (allOption) allOption.textContent = t("all");
@@ -871,6 +905,7 @@ function renderEmpty(message) {
   els.tableScroll.hidden = false;
   els.manualResult.hidden = true;
   if (els.resultsToolbar) els.resultsToolbar.classList.remove("is-hidden");
+  updateWithinSearchControls();
   els.resultsBody.innerHTML = `
     <tr>
       <td colspan="7" class="empty-state">${escapeHtml(message)}</td>
@@ -909,6 +944,7 @@ function renderSourceEmpty() {
   els.tableScroll.hidden = false;
   els.manualResult.hidden = true;
   if (els.resultsToolbar) els.resultsToolbar.classList.remove("is-hidden");
+  updateWithinSearchControls();
   els.resultsBody.innerHTML = `
     <tr>
       <td colspan="7" class="empty-state">
@@ -923,6 +959,7 @@ function renderManualSource(config) {
   els.tableScroll.hidden = true;
   els.manualResult.hidden = false;
   if (els.resultsToolbar) els.resultsToolbar.classList.add("is-hidden");
+  updateWithinSearchControls();
   els.manualResult.innerHTML = `
     <div class="manual-card">
       <div>
@@ -939,6 +976,7 @@ function renderManualNotice(notice) {
   els.tableScroll.hidden = true;
   els.manualResult.hidden = false;
   if (els.resultsToolbar) els.resultsToolbar.classList.add("is-hidden");
+  updateWithinSearchControls();
   els.manualResult.innerHTML = `
     <div class="manual-card">
       <div>
@@ -952,9 +990,54 @@ function renderManualNotice(notice) {
 
 function currentRows() {
   const strict = els.strictMode.checked;
-  let rows = sortRows(state.rows);
+  let rows = state.rows;
   if (strict) rows = rows.filter((row) => row.score >= 30);
-  return rows;
+  rows = filterWithinRows(rows);
+  return sortRows(rows);
+}
+
+function rowSearchValues(row, field) {
+  const product = [row.brand, row.generic, row.category, row.productType];
+  const ingredient = toArray(row.activeIngredients);
+  const company = [row.labeler];
+  const code = [row.productNdc, row.packageNdcs, row.applicationNumber];
+
+  if (field === "product") return product;
+  if (field === "ingredient") return ingredient;
+  if (field === "company") return company;
+  if (field === "code") return code;
+  return [product, ingredient, company, code, row.dosageForm, row.route];
+}
+
+function rowSearchText(row, field) {
+  return normalize(rowSearchValues(row, field).flatMap(toArray).join(" "));
+}
+
+function filterWithinRows(rows) {
+  const query = normalize(state.withinQuery);
+  if (!query) return rows;
+
+  const field = state.withinField || "all";
+  const tokens = query.split(" ").filter(Boolean);
+  return rows.filter((row) => {
+    const text = rowSearchText(row, field);
+    return tokens.every((token) => text.includes(token));
+  });
+}
+
+function updateWithinSearchControls() {
+  const disabled = SOURCES[state.source].manualOnly || Boolean(state.manualNotice) || !state.rows.length;
+  els.withinQuery.disabled = disabled;
+  els.withinField.disabled = disabled;
+  els.withinClear.disabled = disabled || !state.withinQuery;
+}
+
+function resetWithinSearch() {
+  state.withinQuery = "";
+  state.withinField = "all";
+  els.withinQuery.value = "";
+  els.withinField.value = "all";
+  updateWithinSearchControls();
 }
 
 function renderRows() {
@@ -974,8 +1057,13 @@ function renderRows() {
   if (els.resultsToolbar) els.resultsToolbar.classList.remove("is-hidden");
   const rows = currentRows();
   els.resultCount.textContent = numberText(rows.length);
+  updateWithinSearchControls();
 
   if (!rows.length) {
+    if (state.withinQuery) {
+      renderEmpty(t("withinNoResults"));
+      return;
+    }
     renderSourceEmpty();
     return;
   }
@@ -1212,6 +1300,7 @@ async function runSearch({ page = 1, broad = false } = {}) {
     state.total = 0;
     state.rows = [];
     state.rawItems = [];
+    resetWithinSearch();
     state.manualNotice = null;
     els.resultCount.textContent = t("manualShort");
     renderPager();
@@ -1227,6 +1316,7 @@ async function runSearch({ page = 1, broad = false } = {}) {
     state.total = 0;
     state.rows = [];
     state.rawItems = [];
+    resetWithinSearch();
     state.manualNotice = null;
     setStatus(t("defaultStatusTitle"), t("defaultStatusDetail"));
     els.resultCount.textContent = numberText(0);
@@ -1708,6 +1798,7 @@ function applySource(source, { run = false } = {}) {
   state.total = 0;
   state.rows = [];
   state.rawItems = [];
+  resetWithinSearch();
   state.manualNotice = null;
   showError("");
   if (!searchDisabled) setStatus(t("defaultStatusTitle"), config.note);
@@ -1727,6 +1818,7 @@ els.languageButtons.forEach((button) => {
 
 els.form.addEventListener("submit", (event) => {
   event.preventDefault();
+  resetWithinSearch();
   runSearch({ page: 1 });
 });
 
@@ -1738,6 +1830,7 @@ els.sourceTabs.forEach((tab) => {
 
 [els.searchMode, els.categoryFilter, els.resultLimit].forEach((control) => {
   control.addEventListener("change", () => {
+    resetWithinSearch();
     if (state.query || els.keyword.value.trim()) runSearch({ page: 1 });
   });
 });
@@ -1747,6 +1840,30 @@ els.sourceTabs.forEach((tab) => {
     renderRows();
     renderPager();
   });
+});
+
+let withinSearchTimer = null;
+
+els.withinQuery.addEventListener("input", () => {
+  state.withinQuery = els.withinQuery.value.trim();
+  updateWithinSearchControls();
+  window.clearTimeout(withinSearchTimer);
+  withinSearchTimer = window.setTimeout(() => {
+    renderRows();
+    renderPager();
+  }, 120);
+});
+
+els.withinField.addEventListener("change", () => {
+  state.withinField = els.withinField.value;
+  renderRows();
+  renderPager();
+});
+
+els.withinClear.addEventListener("click", () => {
+  resetWithinSearch();
+  renderRows();
+  renderPager();
 });
 
 els.prevPage.addEventListener("click", () => {

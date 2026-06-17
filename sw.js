@@ -1,9 +1,9 @@
-const CACHE_NAME = "opencpp-shell-v1";
+const CACHE_NAME = "opencpp-shell-v3";
 const SHELL_ASSETS = [
   "/",
   "/index.html",
-  "/styles.css",
-  "/app.js",
+  "/styles.css?v=3",
+  "/app.js?v=3",
   "/manifest.webmanifest",
   "/icons/favicon-32.png",
   "/icons/icon-192.png",

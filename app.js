@@ -86,14 +86,14 @@ const UI_TEXT = {
     loaded: "Loaded",
     builtBy: "Built by",
     bugReport: "Bug report",
-    withinSearch: "Search within loaded results",
-    withinSearchPlaceholder: "Filter loaded results",
+    withinSearch: "Search within all results",
+    withinSearchPlaceholder: "Filter all result pages",
     withinTarget: "Search target",
     withinAll: "All columns",
     withinProduct: "Product",
     withinCode: "Code",
     clearFilter: "Clear",
-    withinNoResults: "No loaded results match this filter."
+    withinNoResults: "No results match this filter."
   },
   ko: {
     eyebrow: "CPP 국가 의약품 등록 검색",
@@ -160,14 +160,14 @@ const UI_TEXT = {
     loaded: "불러온 날짜",
     builtBy: "제작",
     bugReport: "버그 리포트",
-    withinSearch: "불러온 결과 내 검색",
-    withinSearchPlaceholder: "현재 불러온 결과에서 찾기",
+    withinSearch: "전체 결과 내 검색",
+    withinSearchPlaceholder: "모든 결과 페이지에서 찾기",
     withinTarget: "검색 대상",
     withinAll: "전체 컬럼",
     withinProduct: "제품명",
     withinCode: "코드",
     clearFilter: "초기화",
-    withinNoResults: "현재 불러온 결과에서 일치하는 항목이 없습니다."
+    withinNoResults: "전체 결과에서 일치하는 항목이 없습니다."
   }
 };
 
@@ -647,6 +647,36 @@ function makeFieldClause(field, phrase, wild) {
   return clauses;
 }
 
+function makeUsWithinExpression() {
+  const raw = state.withinQuery.trim();
+  if (!raw) return "";
+
+  const phrase = openFdaPhrase(raw);
+  const wild = wildcardTerm(raw);
+  const fieldsByTarget = {
+    product: ["brand_name", "generic_name", "marketing_category", "product_type"],
+    ingredient: ["generic_name", "active_ingredients.name"],
+    company: ["labeler_name"],
+    code: ["product_ndc", "packaging.package_ndc", "application_number"],
+    all: [
+      "brand_name",
+      "generic_name",
+      "active_ingredients.name",
+      "labeler_name",
+      "product_ndc",
+      "packaging.package_ndc",
+      "application_number",
+      "dosage_form",
+      "route",
+      "marketing_category",
+      "product_type"
+    ]
+  };
+  const fields = fieldsByTarget[state.withinField] || fieldsByTarget.all;
+  const clauses = fields.flatMap((field) => makeFieldClause(field, phrase, wild));
+  return clauses.length ? `(${clauses.join(" OR ")})` : "";
+}
+
 function makeUsSearchExpression(query, broad = false) {
   const mode = els.searchMode.value;
   const raw = query.trim();
@@ -680,7 +710,15 @@ function makeUsSearchExpression(query, broad = false) {
     ];
   }
 
+  const within = makeUsWithinExpression();
+  if (within) base.push(within);
   return `${base.join(" AND ")} AND (${fields.join(" OR ")})`;
+}
+
+function appendWithinParams(params) {
+  if (!state.withinQuery) return;
+  params.set("within", state.withinQuery);
+  params.set("withinField", state.withinField || "all");
 }
 
 function buildUsSearchUrl(query, page, broad = false) {
@@ -702,6 +740,7 @@ function buildEuSearchUrl(query, page) {
     page: String(page),
     status: "Authorised"
   });
+  appendWithinParams(params);
   return `${EU_ENDPOINT}?${params.toString()}`;
 }
 
@@ -712,6 +751,7 @@ function buildFrSearchUrl(query, page) {
     limit: els.resultLimit.value,
     page: String(page)
   });
+  appendWithinParams(params);
   return `/api/fr-search?${params.toString()}`;
 }
 
@@ -722,6 +762,7 @@ function buildUkSearchUrl(query, page) {
     limit: els.resultLimit.value,
     page: String(page)
   });
+  appendWithinParams(params);
   return `${UK_ENDPOINT}?${params.toString()}`;
 }
 
@@ -732,6 +773,7 @@ function buildDeSearchUrl(query, page) {
     limit: els.resultLimit.value,
     page: String(page)
   });
+  appendWithinParams(params);
   return `${DE_ENDPOINT}?${params.toString()}`;
 }
 
@@ -742,6 +784,7 @@ function buildJpSearchUrl(query, page) {
     limit: els.resultLimit.value,
     page: String(page)
   });
+  appendWithinParams(params);
   return `${JP_ENDPOINT}?${params.toString()}`;
 }
 
@@ -895,6 +938,14 @@ function syncUrlQuery(query) {
   else url.searchParams.delete("q");
   url.searchParams.set("lang", state.lang);
 
+  if (state.withinQuery) {
+    url.searchParams.set("within", state.withinQuery);
+    url.searchParams.set("withinField", state.withinField || "all");
+  } else {
+    url.searchParams.delete("within");
+    url.searchParams.delete("withinField");
+  }
+
   if (state.source === "us") url.searchParams.delete("source");
   else url.searchParams.set("source", state.source);
 
@@ -992,41 +1043,11 @@ function currentRows() {
   const strict = els.strictMode.checked;
   let rows = state.rows;
   if (strict) rows = rows.filter((row) => row.score >= 30);
-  rows = filterWithinRows(rows);
   return sortRows(rows);
 }
 
-function rowSearchValues(row, field) {
-  const product = [row.brand, row.generic, row.category, row.productType];
-  const ingredient = toArray(row.activeIngredients);
-  const company = [row.labeler];
-  const code = [row.productNdc, row.packageNdcs, row.applicationNumber];
-
-  if (field === "product") return product;
-  if (field === "ingredient") return ingredient;
-  if (field === "company") return company;
-  if (field === "code") return code;
-  return [product, ingredient, company, code, row.dosageForm, row.route];
-}
-
-function rowSearchText(row, field) {
-  return normalize(rowSearchValues(row, field).flatMap(toArray).join(" "));
-}
-
-function filterWithinRows(rows) {
-  const query = normalize(state.withinQuery);
-  if (!query) return rows;
-
-  const field = state.withinField || "all";
-  const tokens = query.split(" ").filter(Boolean);
-  return rows.filter((row) => {
-    const text = rowSearchText(row, field);
-    return tokens.every((token) => text.includes(token));
-  });
-}
-
 function updateWithinSearchControls() {
-  const disabled = SOURCES[state.source].manualOnly || Boolean(state.manualNotice) || !state.rows.length;
+  const disabled = SOURCES[state.source].manualOnly || Boolean(state.manualNotice) || !state.query;
   els.withinQuery.disabled = disabled;
   els.withinField.disabled = disabled;
   els.withinClear.disabled = disabled || !state.withinQuery;
@@ -1056,7 +1077,7 @@ function renderRows() {
   els.manualResult.hidden = true;
   if (els.resultsToolbar) els.resultsToolbar.classList.remove("is-hidden");
   const rows = currentRows();
-  els.resultCount.textContent = numberText(rows.length);
+  els.resultCount.textContent = numberText(state.total || rows.length);
   updateWithinSearchControls();
 
   if (!rows.length) {
@@ -1849,21 +1870,26 @@ els.withinQuery.addEventListener("input", () => {
   updateWithinSearchControls();
   window.clearTimeout(withinSearchTimer);
   withinSearchTimer = window.setTimeout(() => {
-    renderRows();
-    renderPager();
-  }, 120);
+    if (state.query || els.keyword.value.trim()) runSearch({ page: 1 });
+    else {
+      renderRows();
+      renderPager();
+    }
+  }, 350);
 });
 
 els.withinField.addEventListener("change", () => {
   state.withinField = els.withinField.value;
-  renderRows();
-  renderPager();
+  if (state.query || els.keyword.value.trim()) runSearch({ page: 1 });
 });
 
 els.withinClear.addEventListener("click", () => {
   resetWithinSearch();
-  renderRows();
-  renderPager();
+  if (state.query || els.keyword.value.trim()) runSearch({ page: 1 });
+  else {
+    renderRows();
+    renderPager();
+  }
 });
 
 els.prevPage.addEventListener("click", () => {
@@ -1882,12 +1908,22 @@ els.resultsBody.addEventListener("click", (event) => {
 const params = new URLSearchParams(window.location.search);
 const initialSource = params.get("source") || "us";
 const initialQuery = params.get("q");
+const initialWithin = params.get("within");
+const initialWithinField = params.get("withinField") || "all";
 applySourceTranslations();
 applyStaticLanguage();
 applySource(initialSource);
 
 if (initialQuery && !SOURCES[state.source].searchDisabled) {
   els.keyword.value = initialQuery;
+  if (initialWithin) {
+    state.withinQuery = initialWithin;
+    state.withinField = ["all", "product", "ingredient", "company", "code"].includes(initialWithinField)
+      ? initialWithinField
+      : "all";
+    els.withinQuery.value = state.withinQuery;
+    els.withinField.value = state.withinField;
+  }
   runSearch({ page: 1 });
 } else if (initialQuery) {
   syncUrlQuery("");

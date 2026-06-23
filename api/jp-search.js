@@ -180,6 +180,27 @@ function mapName(name, score, aliasesUsed) {
   };
 }
 
+function rowSearchValues(row, field) {
+  const product = [row.brand, row.generic, row.category, row.productType];
+  const ingredient = row.activeIngredients;
+  const company = [row.labeler];
+  const code = [row.productNdc, row.packageNdcs, row.applicationNumber];
+
+  if (field === "product") return product;
+  if (field === "ingredient") return ingredient;
+  if (field === "company") return company;
+  if (field === "code") return code;
+  return [product, ingredient, company, code, row.dosageForm, row.route];
+}
+
+function matchesWithin(row, withinText, field) {
+  const normalized = normalize(withinText);
+  if (!normalized) return true;
+
+  const haystack = normalize(rowSearchValues(row, field || "all").map(toText).join(" "));
+  return normalized.split(" ").filter(Boolean).every((token) => haystack.includes(token));
+}
+
 function sendJson(response, statusCode, payload) {
   response.statusCode = statusCode;
   response.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -219,6 +240,8 @@ module.exports = async function handler(request, response) {
     const url = new URL(request.url || "/", `https://${request.headers.host || "localhost"}`);
     const queryText = (url.searchParams.get("q") || "").trim();
     const mode = (url.searchParams.get("mode") || "smart").trim();
+    const withinText = (url.searchParams.get("within") || "").trim();
+    const withinField = url.searchParams.get("withinField") || "all";
     const page = Math.max(1, Number(url.searchParams.get("page") || "1"));
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || "20")));
     const skip = (page - 1) * limit;
@@ -262,7 +285,8 @@ module.exports = async function handler(request, response) {
       .map((name) => ({ name, score: scoreName(name, variants) }))
       .filter((entry) => entry.score > 0)
       .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, "ja"))
-      .map((entry) => mapName(entry.name, entry.score, aliasesUsed));
+      .map((entry) => mapName(entry.name, entry.score, aliasesUsed))
+      .filter((row) => matchesWithin(row, withinText, withinField));
 
     sendJson(response, 200, {
       meta: {

@@ -185,15 +185,37 @@ function mapRecord(item, score) {
   };
 }
 
-async function searchMhra(queryText, page, limit) {
+function rowSearchValues(row, field) {
+  const product = [row.brand, row.generic, row.category, row.productType];
+  const ingredient = row.activeIngredients;
+  const company = [row.labeler];
+  const code = [row.productNdc, row.packageNdcs, row.applicationNumber, row.documentFile];
+
+  if (field === "product") return product;
+  if (field === "ingredient") return ingredient;
+  if (field === "company") return company;
+  if (field === "code") return code;
+  return [product, ingredient, company, code, row.dosageForm, row.route, row.indication];
+}
+
+function matchesWithin(row, withinText, field) {
+  const normalized = normalize(withinText);
+  if (!normalized) return true;
+
+  const haystack = normalize(rowSearchValues(row, field || "all").map(toText).join(" "));
+  return normalized.split(" ").filter(Boolean).every((token) => haystack.includes(token));
+}
+
+async function searchMhra(queryText, page, limit, withinText = "") {
   const skip = (page - 1) * limit;
+  const searchText = [queryText, withinText].map((value) => toText(value).trim()).filter(Boolean).join(" ");
   const params = new URLSearchParams({
     "api-version": "2017-11-11",
     "api-key": MHRA_API_KEY,
     "$count": "true",
     "$top": String(limit),
     "$skip": String(skip),
-    search: queryText,
+    search: searchText,
     queryType: "simple",
     searchMode: "all",
     scoringProfile: "preferKeywords",
@@ -226,6 +248,8 @@ module.exports = async function handler(request, response) {
     const url = new URL(request.url || "/", `https://${request.headers.host || "localhost"}`);
     const queryText = (url.searchParams.get("q") || "").trim();
     const mode = url.searchParams.get("mode") || "smart";
+    const withinText = (url.searchParams.get("within") || "").trim();
+    const withinField = url.searchParams.get("withinField") || "all";
     const page = Math.max(1, Number(url.searchParams.get("page") || "1"));
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || "20")));
     const skip = (page - 1) * limit;
@@ -247,12 +271,13 @@ module.exports = async function handler(request, response) {
       return;
     }
 
-    const payload = await searchMhra(queryText, page, limit);
+    const payload = await searchMhra(queryText, page, limit, withinText);
     const rows = (payload.value || [])
       .map((item) => ({ item, score: scoreRecord(item, query, mode) }))
       .filter((entry) => entry.score > 0)
       .sort((a, b) => b.score - a.score || cleanTitle(a.item.title).localeCompare(cleanTitle(b.item.title)))
-      .map((entry) => mapRecord(entry.item, entry.score));
+      .map((entry) => mapRecord(entry.item, entry.score))
+      .filter((row) => matchesWithin(row, withinText, withinField));
     const upstreamTotal = Number(payload["@odata.count"] || rows.length);
     const displayTotal = rows.length < limit ? skip + rows.length : upstreamTotal;
 

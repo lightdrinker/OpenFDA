@@ -12,7 +12,7 @@
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
-  <link rel="stylesheet" href="./styles.css?v=3" />
+  <link rel="stylesheet" href="./styles.css?v=4" />
 </head>
 <body>
   <header class="app-header">
@@ -122,14 +122,14 @@
           <strong id="resultCount">0</strong>
           <span id="resultsLabel">results</span>
         </div>
-        <div class="within-search" aria-label="Search within loaded results">
+        <div class="within-search" aria-label="Search within all results">
           <div class="within-search-query">
-            <label id="withinSearchLabel" for="withinQuery">Search within loaded results</label>
+            <label id="withinSearchLabel" for="withinQuery">Search within all results</label>
             <input
               id="withinQuery"
               type="search"
               autocomplete="off"
-              placeholder="Filter loaded results"
+              placeholder="Filter all result pages"
               disabled
             />
           </div>
@@ -206,6 +206,6 @@
     </tr>
   </template>
 
-  <script src="./app.js?v=3"></script>
+  <script src="./app.js?v=4"></script>
 </body>
 </html>

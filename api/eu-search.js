@@ -105,6 +105,27 @@ function mapMedicine(item, score) {
   };
 }
 
+function rowSearchValues(row, field) {
+  const product = [row.brand, row.generic, row.category, row.productType];
+  const ingredient = row.activeIngredients;
+  const company = [row.labeler];
+  const code = [row.productNdc, row.packageNdcs, row.applicationNumber, row.atc];
+
+  if (field === "product") return product;
+  if (field === "ingredient") return ingredient;
+  if (field === "company") return company;
+  if (field === "code") return code;
+  return [product, ingredient, company, code, row.dosageForm, row.route, row.indication, row.therapeuticArea];
+}
+
+function matchesWithin(row, withinText, field) {
+  const normalized = normalize(withinText);
+  if (!normalized) return true;
+
+  const haystack = normalize(rowSearchValues(row, field || "all").map(toText).join(" "));
+  return normalized.split(" ").filter(Boolean).every((token) => haystack.includes(token));
+}
+
 async function loadMedicines() {
   if (cachedPayload && Date.now() - cachedAt < CACHE_MS) return cachedPayload;
 
@@ -136,6 +157,8 @@ module.exports = async function handler(request, response) {
     const url = new URL(request.url || "/", `https://${request.headers.host || "localhost"}`);
     const queryText = (url.searchParams.get("q") || "").trim();
     const mode = url.searchParams.get("mode") || "smart";
+    const withinText = (url.searchParams.get("within") || "").trim();
+    const withinField = url.searchParams.get("withinField") || "all";
     const page = Math.max(1, Number(url.searchParams.get("page") || "1"));
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || "20")));
     const status = url.searchParams.get("status") || "Authorised";
@@ -166,7 +189,8 @@ module.exports = async function handler(request, response) {
       .map((item) => ({ item, score: scoreMedicine(item, query, mode) }))
       .filter((entry) => entry.score > 0)
       .sort((a, b) => b.score - a.score || toText(a.item.name_of_medicine).localeCompare(toText(b.item.name_of_medicine)))
-      .map((entry) => mapMedicine(entry.item, entry.score));
+      .map((entry) => mapMedicine(entry.item, entry.score))
+      .filter((row) => matchesWithin(row, withinText, withinField));
 
     sendJson(response, 200, {
       meta: {

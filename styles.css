@@ -360,40 +360,12 @@ h1 {
   padding: 10px clamp(18px, 3vw, 44px);
 }
 
-.app-footer a {
-  color: #8190a3;
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.app-footer a:hover {
-  color: var(--accent-strong);
-}
-
 .credit-name {
   color: #2563eb;
 }
 
-.footer-credit,
-.footer-separator {
+.footer-credit {
   flex: 0 0 auto;
-}
-
-.footer-report {
-  display: inline-flex;
-  align-items: center;
-  min-height: 34px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #fff;
-  font-weight: 700;
-  padding: 0 14px;
-}
-
-.footer-report:hover {
-  border-color: var(--line-strong);
-  background: #f7faf9;
-  text-decoration: none;
 }
 
 .results-toolbar {

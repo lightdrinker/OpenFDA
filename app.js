@@ -85,7 +85,6 @@ const UI_TEXT = {
     updated: "Updated",
     loaded: "Loaded",
     builtBy: "Built by",
-    bugReport: "Bug report",
     withinSearch: "Search within all results",
     withinSearchPlaceholder: "Filter all result pages",
     withinTarget: "Search target",
@@ -159,7 +158,6 @@ const UI_TEXT = {
     updated: "업데이트",
     loaded: "불러온 날짜",
     builtBy: "제작",
-    bugReport: "버그 리포트",
     withinSearch: "전체 결과 내 검색",
     withinSearchPlaceholder: "모든 결과 페이지에서 찾기",
     withinTarget: "검색 대상",
@@ -505,7 +503,6 @@ function applyStaticLanguage() {
   document.getElementById("ingredientHeader").textContent = t("ingredient");
   document.getElementById("companyHeader").textContent = t("company");
   document.getElementById("detailHeader").textContent = t("detail");
-  document.getElementById("bugReportLink").textContent = t("bugReport");
   document.getElementById("withinSearchLabel").textContent = t("withinSearch");
   document.getElementById("withinFieldLabel").textContent = t("withinTarget");
   els.withinQuery.placeholder = t("withinSearchPlaceholder");
